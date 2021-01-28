@@ -10,7 +10,7 @@ WallSign Format
 ```
 [Metro]
 (string) <-- Line Name
-(number+[N|S|W|E]) <-- Station Number in Line & NextSation Direction
+(number+[N|S|W|E]) <-- Station Index in Line & NextSation Direction
 (string) <-- Station Name
 ```
 
@@ -23,13 +23,15 @@ Line 1
 Central Street
 ```
 
-That means the station belongs to `Line 1` .
+That means:
+
+The station belongs to `Line 1` .
 
 It is the second station in `Line 1` (count from 0).
 
 To the next station, cart goes south.
 
-The station named `Central Street`.
+The station is named `Central Street`.
 
 #### 2. Right click the sign with things in hand to select stations.
 
