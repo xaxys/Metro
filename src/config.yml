@@ -1,0 +1,5 @@
+debug: false # Debug mode. You'll need the 'metro.reload' permission.
+title: '&a[&3&lMetro&a]'
+error: '[&4Wrong Metro Format&r]'
+selStart: '&8> &5'
+selEnd: ' &8<'
