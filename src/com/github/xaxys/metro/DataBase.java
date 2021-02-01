@@ -12,19 +12,22 @@ import java.util.UUID;
 import org.bukkit.Location;
 
 public class DataBase implements Serializable {
+
+	// v1.1.2
+	private static final long serialVersionUID = -6319034836500942224L;
 	
-	public transient static DataBase DB = null;
+	public static DataBase DB = null;
 	
 	public HashMap<String, MetroLine> MetroMap;
 	public HashMap<Position, MetroStation> PositionMap;
 	public transient HashMap<UUID, Route> RouteMap;
 	
 	public DataBase() {
-		MetroMap = new HashMap<String, MetroLine>();
-		PositionMap = new HashMap<Position, MetroStation>();
-		RouteMap = new HashMap<UUID, Route>();
+		MetroMap = new HashMap<>();
+		PositionMap = new HashMap<>();
+		RouteMap = new HashMap<>();
 	}
-	
+
 	@Override
 	public String toString() {
 		StringBuilder mmsb = new StringBuilder();
@@ -33,9 +36,21 @@ public class DataBase implements Serializable {
 		PositionMap.forEach((k, v) -> pmsb.append(String.format("{%s:%s},", k, v)));
 		return String.format("DataBase{MetroMap{%s},PositionMap{%s}}", mmsb, pmsb);
 	}
+
+	public boolean setLoop(String lineName, boolean isLoop) {
+		if (MetroMap.containsKey(lineName)) {
+			MetroLine line = MetroMap.get(lineName);
+			line.isLoop = isLoop;
+
+			saveDB(Conf.DB_PATH);
+			return true;
+		} else {
+			return false;
+		}
+	}
 	
 	public void addStation(MetroStation s, int index) {
-		if (MetroMap.containsKey(s.LineName) == false) {
+		if (!MetroMap.containsKey(s.LineName)) {
 			MetroMap.put(s.LineName, new MetroLine(s.LineName));
 		}
 		MetroLine line = MetroMap.get(s.LineName);
@@ -47,7 +62,7 @@ public class DataBase implements Serializable {
 		}
 		
 		PositionMap.put(s.Pos, s);
-		Main.plugin.setTimeout(() -> this.saveDB(Conf.DB_PATH), 200);
+		saveDB(Conf.DB_PATH);
 	}
 	
 	public void addRoute(UUID uuid, Route route) {
@@ -70,7 +85,7 @@ public class DataBase implements Serializable {
 			MetroMap.remove(line.Name);
 		}
 		
-		Main.plugin.setTimeout(() -> this.saveDB(Conf.DB_PATH), 200);
+		saveDB(Conf.DB_PATH);
 	}
 	
 	public void delRoute(UUID uuid) {
@@ -78,15 +93,13 @@ public class DataBase implements Serializable {
 	}
 	
 	public void complete() {
-		MetroMap.forEach((k, v) -> {
-			v.complete();
-		});
-		RouteMap = new HashMap<UUID, Route>();
+		MetroMap.forEach((k, v) -> v.complete());
+		RouteMap = new HashMap<>();
 	}
 	
 	public void saveDB(String s) {
-		FileOutputStream fos = null;
-		ObjectOutputStream oos = null;
+		FileOutputStream fos;
+		ObjectOutputStream oos;
 		try {
 			fos = new FileOutputStream(s);
 			oos = new ObjectOutputStream(fos);
@@ -99,8 +112,8 @@ public class DataBase implements Serializable {
 	}
 	
 	public static DataBase readDB(String s) {
-		FileInputStream fos = null;
-		ObjectInputStream oos = null;
+		FileInputStream fos;
+		ObjectInputStream oos;
 		DataBase db = null;
 		try {
 			fos = new FileInputStream(s);

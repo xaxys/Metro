@@ -23,9 +23,9 @@ public final class Util {
 		s.update();
 	}
 
-	public static void setSign(Block sign, String lineOne) {
+	public static void setSign(Block sign, String title) {
 		Sign s = ((Sign)sign.getState());
-		s.setLine(0, lineOne == null ? Conf.TITLE : lineOne);
+		s.setLine(0, title == null ? Conf.TITLE : title);
 		s.setLine(1, "");
 		s.setLine(2, "");
 		s.setLine(3, "");

@@ -1,19 +1,17 @@
 package com.github.xaxys.metro;
 
-import java.io.File;
 import org.bukkit.Bukkit;
+import org.bukkit.Note;
 import org.bukkit.configuration.Configuration;
 import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitTask;
+
+import java.io.File;
 
 public class Conf {
-	// Global Variables:
-	public static BukkitTask CLTMR = null;
-	public static final Object API_SYNC = new Object();
 
 	// Global Config Settings:
-	public static boolean DEBUG = false;
+	public static boolean DEBUG;
 	public static String TITLE;
 	public static String ERROR;
 	public static String L_ST;
@@ -25,6 +23,16 @@ public class Conf {
 	public static final String MSG_ERR_MID = "§e: §c";
 	public static final String CONFIG_PATH = "plugins/Metro/config.yml";
 	public static final String DB_PATH = "plugins/Metro/db.bin";
+	public static final Note[] MUSIC_ENTER = new Note[] {
+//			Note.sharp(0, Note.Tone.D),
+//			Note.sharp(0, Note.Tone.A),
+//			Note.flat(1, Note.Tone.G),
+//			Note.sharp(0, Note.Tone.A),
+//			Note.sharp(0, Note.Tone.D),
+//			Note.sharp(0, Note.Tone.A),
+//			Note.flat(0, Note.Tone.F),
+//			Note.sharp(1, Note.Tone.A),
+	};
 	
 	public static MemoryConfiguration defaults = new MemoryConfiguration();
 	public static Configuration config = null;
@@ -40,15 +48,11 @@ public class Conf {
 	public static void loadConfig() {
 		try {
 			File path = new File(CONFIG_PATH);
-			if (path.exists()) {
-				config = Main.plugin.getConfig();
-			} else {
+			if (!path.exists()) {
 				Main.plugin.saveDefaultConfig();
-				config = Main.plugin.getConfig();
 			}
-
+			config = Main.plugin.getConfig();
 			config.setDefaults(defaults);
-			CLTMR = null;
 
 			// Load Global Settings:
 			DEBUG = config.getBoolean("debug");

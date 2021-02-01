@@ -1,15 +1,13 @@
 main: com.github.xaxys.metro.Main
 name: Metro
-version: 1.1.1
+version: 1.1.7
 author: xaxys
 api-version: 1.16
 description: Adds Working Metro to Minecraft!
 commands:
   metro:
-    description: Reload The Plugin.
-    usage: /metro reload
-    permission: metro.reload
-    permission-message: You don't have permission to do that!
+    description: Metro Plugin Command.
+    usage: /metro
 permissions:
   metro.reload:
     default: op

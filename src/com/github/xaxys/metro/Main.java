@@ -2,16 +2,14 @@ package com.github.xaxys.metro;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.HandlerList;
-import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask;
 
-public class Main extends JavaPlugin implements Listener {
+public class Main extends JavaPlugin implements CommandExecutor {
 	
-	public static Main plugin = null;
+	public static Main plugin;
 	public static final String PERM_RELOAD = "metro.reload";
 	
 	@Override
@@ -34,48 +32,40 @@ public class Main extends JavaPlugin implements Listener {
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 		if(command.getName().equalsIgnoreCase("metro")) {
-			if (args.length == 1 && args[0].equalsIgnoreCase("check") && sender.hasPermission(PERM_RELOAD)) {
-				sender.sendMessage(DataBase.DB.toString());
-			} else if(args.length == 1 && args[0].equalsIgnoreCase("debug") && sender.hasPermission(PERM_RELOAD)) {
-				Conf.DEBUG = Conf.DEBUG == true ? false : true;
-				sender.sendMessage("§aMetro Plugin DebugMode:"+Conf.DEBUG);
+			if (args.length == 3 && args[0].equalsIgnoreCase("loop") && sender.hasPermission(PERM_RELOAD)) {
+
+				// switch a line to loop line/straight line
+
+				boolean isLoop = false;
+				if (args[1].equalsIgnoreCase("t") || args[1].equalsIgnoreCase("true")){
+					isLoop = true;
+				}
+				if (DataBase.DB.setLoop(args[2], isLoop)) {
+					sender.sendMessage(Conf.MSG_DBG+"MetroLine "+args[2]+" isLoop set to: "+isLoop);
+				} else {
+					sender.sendMessage(Conf.MSG_DBG+"MetroLine "+args[2]+" not found");
+				}
 			} else if(args.length == 1 && args[0].equalsIgnoreCase("reload") && sender.hasPermission(PERM_RELOAD)) {
-				setTimeout(() -> {
-					Conf.loadConfig();
-					sender.sendMessage("§aMetro Plugin Reloaded!");
-				}, 200);
+
+				// reload configuration
+
+				Conf.loadConfig();
+				sender.sendMessage("§aMetro Plugin Reloaded!");
+			} else if(args.length == 1 && args[0].equalsIgnoreCase("debug") && sender.hasPermission(PERM_RELOAD)) {
+
+				// enable/disable debug mode
+
+				Conf.DEBUG = !Conf.DEBUG;
+				sender.sendMessage("§aMetro Plugin DebugMode:"+Conf.DEBUG);
 			} else {
-				sender.sendMessage("§cUsage: /metro reload");
+				sender.sendMessage(new String[]{
+					"§cUsage: /metro reload",
+					"§cUsage: /metro loop [true/false] [MetroLine Name]",
+				});
 			}
 			return true;
 		}
 		return false;
-	}
-	
-	public BukkitTask setTimeout(Runnable function, long millis) {
-		return new BukkitRunnable() {
-			public void run() {
-				synchronized (Conf.API_SYNC) {
-					function.run();
-				}
-			}
-		}.runTaskLater(this, millis / 50);
-	}
-
-	public BukkitTask setInterval(Runnable function, long millis) {
-		long t = millis / 50;
-		return new BukkitRunnable() {
-			public void run() {
-				synchronized (Conf.API_SYNC) {
-					function.run();
-				}
-			}
-		}.runTaskTimer(this, t, t);
-	}
-
-	public BukkitTask setInterval(BukkitRunnable function, long millis) {
-		long t = millis / 50;
-		return function.runTaskTimer(this, t, t);
 	}
 
 }

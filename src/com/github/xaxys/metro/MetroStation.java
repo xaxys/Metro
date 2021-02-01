@@ -1,14 +1,18 @@
 package com.github.xaxys.metro;
 
-import java.io.Serializable;
-
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.type.WallSign;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Minecart;
+
+import java.io.Serializable;
 
 public class MetroStation implements Serializable {
+
+	// v1.1.2
+	private static final long serialVersionUID = -6390181463722350211L;
 	
 	public enum Direction {
 		NORTH,
@@ -24,6 +28,7 @@ public class MetroStation implements Serializable {
 	
 	public transient MetroLine Line;
 	public transient MetroStation Dest;
+	public transient Route LastRoute;
 	
 	public void complete(MetroLine line) {
 		Line = line;
@@ -68,12 +73,24 @@ public class MetroStation implements Serializable {
 			Util.setLine(b, 1, LineName+" §7["+n+"]");
 		}
 	}
-	
-	public void callCart() {
+
+	// spawn a cart near the station
+	// return false if there is a unused cart spawned by this station nearby
+	public boolean callCart() {
 		Location loc = Pos.toLocation();
-		Minecart cart = (Minecart)loc.getWorld().spawnEntity(loc.add(0, -1, 0), EntityType.MINECART);
-		Route route = new Route(this, Dest);
+		if (LastRoute != null && LastRoute.Start == false) {
+			Entity cart = Bukkit.getEntity(LastRoute.CartUUID);
+			if (cart != null) {
+				// clean the unused cart spawned by this station faraway
+				if (cart.getLocation().distance(loc) > 5) cart.remove();
+				else return false;
+			}
+		}
+		Entity cart = loc.getWorld().spawnEntity(loc.add(0, -1, 0), EntityType.MINECART);
+		Route route = new Route(this, Dest, cart.getUniqueId());
+		LastRoute = route;
 		Conf.dbg("CallCart UUID:"+cart.getUniqueId());
 		DataBase.DB.addRoute(cart.getUniqueId(), route);
+		return true;
 	}
 }
