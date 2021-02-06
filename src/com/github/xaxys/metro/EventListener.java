@@ -28,9 +28,16 @@ public class EventListener implements Listener {
 
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onSignChange(SignChangeEvent e) {
+		
 		if (e.getBlock().getBlockData() instanceof WallSign) {
 			if (e.getLine(0).equalsIgnoreCase("[metro]")) {
 				e.setCancelled(true);
+				// Check permission
+				if (!e.getPlayer().hasPermission("metro.create")) {
+					Conf.msg(e.getPlayer(), "You don't have permission to create a metro station!");
+					return;
+				}
+				
 				// Line 0
 				e.setLine(0, Conf.ERROR);
 
@@ -85,6 +92,12 @@ public class EventListener implements Listener {
 		if (e.getAction() == Action.RIGHT_CLICK_BLOCK && e.getClickedBlock().getBlockData() instanceof WallSign) {
 			MetroStation station = DataBase.DB.getStation(e.getClickedBlock().getLocation());
 			if (station != null) {
+				e.setCancelled(true);
+				// Check permission
+				if (!e.getPlayer().hasPermission("metro.use")) {
+					Conf.msg(e.getPlayer(), "You don't have permission to use the metro!");
+					return;
+				}
 				if (e.getItem() == null || e.getPlayer().isSneaking()) {
 					boolean f = station.callCart();
 					if (f == false) {
@@ -96,7 +109,6 @@ public class EventListener implements Listener {
 					idx = (idx + 1) % line.size();
 					station.setDestination(line.get(idx));
 				}
-				e.setCancelled(true);
 			}
 		}
 	}
@@ -115,6 +127,12 @@ public class EventListener implements Listener {
 			if (e.getBlock().getBlockData() instanceof WallSign) {
 				MetroStation station = DataBase.DB.getStation(e.getBlock().getLocation()); 
 				if (station != null) {
+					// Check permission
+					if (!e.getPlayer().hasPermission("metro.create")) {
+						e.setCancelled(true);
+						Conf.msg(e.getPlayer(), "You don't have permission to destory the metro station!");
+						return;
+					}
 					DataBase.DB.delStation(station);
 					Conf.dbg("onStationSignBreak");
 				}
@@ -127,6 +145,14 @@ public class EventListener implements Listener {
 		if (v instanceof Minecart) {
 			Route route = DataBase.DB.getRoute(v.getUniqueId());
 			if (route != null) {
+				if (e.getEntered() instanceof Player) {
+					Player player = ((Player) e.getEntered());
+					if (!player.hasPermission("metro.use")) {
+						e.setCancelled(true);
+						Conf.msg(player, "You don't have permission to use the metro!");
+						return;
+					}
+				}
 				route.Start = true;
 				Vector vec = new Vector(0, 0, 0);
 				Integer N;
@@ -136,10 +162,10 @@ public class EventListener implements Listener {
 					N = MetroLine.compareStation(route.Dest, route.Orig);
 				}
 				switch (route.Orig.IncDire) {
-				case NORTH: vec.setZ(-N); break;
-				case SOUTH: vec.setZ(N); break;
-				case WEST: vec.setX(-N); break;
-				case EAST: vec.setX(N); break;
+					case NORTH: vec.setZ(-N); break;
+					case SOUTH: vec.setZ(N); break;
+					case WEST: vec.setX(-N); break;
+					case EAST: vec.setX(N); break;
 				}
 				v.setVelocity(vec);
 				Conf.dbg("onVehicleEnter");
