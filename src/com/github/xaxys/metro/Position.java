@@ -37,19 +37,15 @@ public class Position implements Serializable {
 		} else return false;
 	}
 
-	public Location toLocation() {
-		World w = Bukkit.getWorld(world);
-		if (w == null) return null;
-		return new Location(w, x.doubleValue(), y.doubleValue(), z.doubleValue());
-	}
-
 	@Override
 	public String toString() {
 		return String.format("Position{x=%d,y=%d,z=%d,world=%s}", x, y, z, world);
 	}
 
-	public String toShortString() {
-		return String.format("[X=%d, Y=%d, Z=%d]", x, y, z);
+	public Location toLocation() {
+		World w = Bukkit.getWorld(world);
+		if (w == null) return null;
+		return new Location(w, x.doubleValue(), y.doubleValue(), z.doubleValue());
 	}
 
 }

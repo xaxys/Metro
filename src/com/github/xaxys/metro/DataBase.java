@@ -48,6 +48,11 @@ public class DataBase implements Serializable {
 			return false;
 		}
 	}
+
+	public Boolean getLoop(String lineName) {
+		MetroLine line = MetroMap.get(lineName);
+		return line == null ? null : line.isLoop;
+	}
 	
 	public void addStation(MetroStation s, int index) {
 		if (!MetroMap.containsKey(s.LineName)) {

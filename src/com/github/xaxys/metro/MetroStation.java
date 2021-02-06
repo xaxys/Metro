@@ -78,7 +78,7 @@ public class MetroStation implements Serializable {
 	// return false if there is a unused cart spawned by this station nearby
 	public boolean callCart() {
 		Location loc = Pos.toLocation();
-		if (LastRoute != null && LastRoute.Start == false) {
+		if (LastRoute != null && !LastRoute.Start) {
 			Entity cart = Bukkit.getEntity(LastRoute.CartUUID);
 			if (cart != null) {
 				// clean the unused cart spawned by this station faraway
@@ -87,10 +87,11 @@ public class MetroStation implements Serializable {
 			}
 		}
 		Entity cart = loc.getWorld().spawnEntity(loc.add(0, -1, 0), EntityType.MINECART);
-		Route route = new Route(this, Dest, cart.getUniqueId());
-		LastRoute = route;
+		LastRoute = new Route(this, Dest, cart.getUniqueId());
+		cart.setCustomName(LastRoute.Orig.Name+"-"+LastRoute.Dest.Name);
+		cart.setCustomNameVisible(true);
 		Conf.dbg("CallCart UUID:"+cart.getUniqueId());
-		DataBase.DB.addRoute(cart.getUniqueId(), route);
+		DataBase.DB.addRoute(cart.getUniqueId(), LastRoute);
 		return true;
 	}
 }

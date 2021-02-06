@@ -1,7 +1,8 @@
 package com.github.xaxys.metro;
 
-import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.block.Block;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
@@ -31,12 +32,13 @@ public class EventListener implements Listener {
 		
 		if (e.getBlock().getBlockData() instanceof WallSign) {
 			if (e.getLine(0).equalsIgnoreCase("[metro]")) {
-				e.setCancelled(true);
 				// Check permission
-				if (!e.getPlayer().hasPermission("metro.create")) {
-					Conf.msg(e.getPlayer(), "You don't have permission to create a metro station!");
+				if (!e.getPlayer().hasPermission(Main.PERM_CREATE)) {
+					Conf.msg(e.getPlayer(), Conf.MSG_NOPERM);
 					return;
 				}
+
+				e.setCancelled(true);
 				
 				// Line 0
 				e.setLine(0, Conf.ERROR);
@@ -91,32 +93,40 @@ public class EventListener implements Listener {
 		if (e.getHand() != EquipmentSlot.HAND) return;
 		if (e.getAction() == Action.RIGHT_CLICK_BLOCK && e.getClickedBlock().getBlockData() instanceof WallSign) {
 			MetroStation station = DataBase.DB.getStation(e.getClickedBlock().getLocation());
-			if (station != null) {
-				e.setCancelled(true);
-				// Check permission
-				if (!e.getPlayer().hasPermission("metro.use")) {
-					Conf.msg(e.getPlayer(), "You don't have permission to use the metro!");
-					return;
+			if (station == null) return;
+			e.setCancelled(true);
+
+			// Check permission
+			if (!e.getPlayer().hasPermission(Main.PERM_USE)) {
+				Conf.msg(e.getPlayer(), Conf.MSG_NOPERM);
+				return;
+			}
+			if (e.getItem() == null || e.getPlayer().isSneaking()) {
+				boolean f = station.callCart();
+				if (f == false) {
+					Conf.msg(e.getPlayer(), "Please clean the last minecart first.");
 				}
-				if (e.getItem() == null || e.getPlayer().isSneaking()) {
-					boolean f = station.callCart();
-					if (f == false) {
-						Conf.msg(e.getPlayer(), "Please clean the last minecart first.");
-					}
-				} else {
-					MetroLine line = station.Line;
-					int idx = line.indexOf(station.Dest);
-					idx = (idx + 1) % line.size();
-					station.setDestination(line.get(idx));
-				}
+			} else {
+				MetroLine line = station.Line;
+				int idx = line.indexOf(station.Dest);
+				idx = (idx + 1) % line.size();
+				station.setDestination(line.get(idx));
 			}
 		}
 	}
-	
+
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onBlockPhysics(BlockPhysicsEvent e) {
-		if (e.getBlock().getBlockData() instanceof WallSign &&
-				DataBase.DB.getStation(e.getBlock().getLocation()) != null) {
+		Block b = e.getBlock();
+		if (b.getBlockData() instanceof WallSign) {
+			WallSign sign = (WallSign) b.getBlockData();
+			MetroStation station = DataBase.DB.getStation(b.getLocation());
+			if (station == null) return;
+
+			Block backBlock = b.getRelative(sign.getFacing().getOppositeFace());
+			if (backBlock.getType() == Material.AIR) {
+				backBlock.setType(Material.STONE);
+			}
 			e.setCancelled(true);
 			Conf.dbg("CancelSignPhysics");
 		}
@@ -124,52 +134,49 @@ public class EventListener implements Listener {
 
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onBlockBreak(BlockBreakEvent e) {
-			if (e.getBlock().getBlockData() instanceof WallSign) {
-				MetroStation station = DataBase.DB.getStation(e.getBlock().getLocation()); 
-				if (station != null) {
-					// Check permission
-					if (!e.getPlayer().hasPermission("metro.create")) {
-						e.setCancelled(true);
-						Conf.msg(e.getPlayer(), "You don't have permission to destory the metro station!");
-						return;
-					}
-					DataBase.DB.delStation(station);
-					Conf.dbg("onStationSignBreak");
-				}
+		if (e.getBlock().getBlockData() instanceof WallSign) {
+			MetroStation station = DataBase.DB.getStation(e.getBlock().getLocation());
+			if (station == null) return;
+
+			// Check permission
+			if (!e.getPlayer().hasPermission(Main.PERM_CREATE)) {
+				e.setCancelled(true);
+				Conf.msg(e.getPlayer(), Conf.MSG_NOPERM);
+				return;
 			}
+			DataBase.DB.delStation(station);
+			Conf.dbg("onStationSignBreak");
+		}
 	}
-	
+
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onVehicleEnter(VehicleEnterEvent e) {
 		Vehicle v = e.getVehicle();
 		if (v instanceof Minecart) {
 			Route route = DataBase.DB.getRoute(v.getUniqueId());
-			if (route != null) {
-				if (e.getEntered() instanceof Player) {
-					Player player = ((Player) e.getEntered());
-					if (!player.hasPermission("metro.use")) {
-						e.setCancelled(true);
-						Conf.msg(player, "You don't have permission to use the metro!");
-						return;
-					}
+			if (route == null) return;
+
+			// Check permission
+			if (e.getEntered() instanceof Player) {
+				Player player = ((Player) e.getEntered());
+				if (!player.hasPermission(Main.PERM_USE)) {
+					e.setCancelled(true);
+					Conf.msg(player, Conf.MSG_NOPERM);
+					return;
 				}
-				route.Start = true;
-				Vector vec = new Vector(0, 0, 0);
-				Integer N;
-				if (route.Orig.Line.isLoop) {
-					N = 1;
-				} else {
-					N = MetroLine.compareStation(route.Dest, route.Orig);
-				}
-				switch (route.Orig.IncDire) {
-					case NORTH: vec.setZ(-N); break;
-					case SOUTH: vec.setZ(N); break;
-					case WEST: vec.setX(-N); break;
-					case EAST: vec.setX(N); break;
-				}
-				v.setVelocity(vec);
-				Conf.dbg("onVehicleEnter");
 			}
+
+			route.Start = true;
+			Vector vec = new Vector(0, 0, 0);
+			Integer N = route.Orig.Line.isLoop ? 1 : MetroLine.compareStation(route.Dest, route.Orig);
+			switch (route.Orig.IncDire) {
+				case NORTH: vec.setZ(-N); break;
+				case SOUTH: vec.setZ(N); break;
+				case WEST: vec.setX(-N); break;
+				case EAST: vec.setX(N); break;
+			}
+			v.setVelocity(vec);
+			Conf.dbg("onVehicleEnter");
 		}
 	}
 	
@@ -178,11 +185,11 @@ public class EventListener implements Listener {
 		Vehicle v = e.getVehicle();
 		if (v instanceof Minecart) {
 			Route route = DataBase.DB.getRoute(v.getUniqueId());
-			if (route != null) {
-				DataBase.DB.delRoute(v.getUniqueId());
-				v.remove();
-				Conf.dbg("onVehicleExit");
-			}
+			if (route == null) return;
+
+			DataBase.DB.delRoute(v.getUniqueId());
+			v.remove();
+			Conf.dbg("onVehicleExit");
 		}
 	}
 	
@@ -191,12 +198,12 @@ public class EventListener implements Listener {
 		Vehicle v = e.getVehicle();
 		if (v instanceof Minecart) {
 			Route route = DataBase.DB.getRoute(v.getUniqueId());
-			if (route != null) {
-				DataBase.DB.delRoute(v.getUniqueId());
-				v.remove();
-				e.setCancelled(true);
-				Conf.dbg("onVehicleDestroy");
-			}
+			if (route == null) return;
+
+			DataBase.DB.delRoute(v.getUniqueId());
+			v.remove();
+			e.setCancelled(true);
+			Conf.dbg("onVehicleDestroy");
 		}
 	}
 	
@@ -205,28 +212,23 @@ public class EventListener implements Listener {
 		Vehicle v = e.getVehicle();
 		if (v instanceof Minecart) {
 			Route route = DataBase.DB.getRoute(v.getUniqueId());
-			if (route != null) {
-				if (route.Start == false) {
-					v.setVelocity(new Vector(0, 0, 0));
-					return;
-				}
-				Location loc = v.getLocation();
-				loc.setX(loc.getBlockX());
-				loc.setY(loc.getBlockY()+1);
-				loc.setZ(loc.getBlockZ());
-				MetroStation station = DataBase.DB.getStation(loc);
-				if (station == route.Dest) {
-					v.setVelocity(new Vector(0, 0, 0));
-				}
-				if (station != null && v.isEmpty() == false) {
-					v.getPassengers().forEach((p) -> {
-						if (p instanceof Player) {
-							Player player = ((Player) p);
-							player.sendTitle(station.Name, station.LineName, 10, 70, 20);
-							player.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 2, 1);
-						}
-					});
-				}
+			if (route == null) return;
+			if (route.Start == false) {
+				v.setVelocity(new Vector(0, 0, 0));
+				return;
+			}
+			MetroStation station = DataBase.DB.getStation(v.getLocation().add(0, 1, 0));
+			if (station == route.Dest) {
+				v.setVelocity(new Vector(0, 0, 0));
+			}
+			if (station != null) {
+				v.getPassengers().forEach((p) -> {
+					if (p instanceof Player) {
+						Player player = ((Player) p);
+						player.sendTitle(station.Name, station.LineName, 10, 70, 20);
+						player.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 2, 1);
+					}
+				});
 			}
 		}
 	}

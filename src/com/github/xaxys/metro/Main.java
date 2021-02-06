@@ -11,6 +11,8 @@ public class Main extends JavaPlugin implements CommandExecutor {
 	
 	public static Main plugin;
 	public static final String PERM_RELOAD = "metro.reload";
+	public static final String PERM_CREATE = "metro.create";
+	public static final String PERM_USE = "metro.use";
 	
 	@Override
 	public void onEnable() {
@@ -32,18 +34,32 @@ public class Main extends JavaPlugin implements CommandExecutor {
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 		if(command.getName().equalsIgnoreCase("metro")) {
-			if (args.length == 3 && args[0].equalsIgnoreCase("loop") && sender.hasPermission(PERM_RELOAD)) {
+			if (args[0].equalsIgnoreCase("loop") && sender.hasPermission(PERM_CREATE)) {
+				if (args.length == 3) {
 
-				// switch a line to loop line/straight line
+					// switch a line to loop line/straight line
 
-				boolean isLoop = false;
-				if (args[1].equalsIgnoreCase("t") || args[1].equalsIgnoreCase("true")){
-					isLoop = true;
-				}
-				if (DataBase.DB.setLoop(args[2], isLoop)) {
-					sender.sendMessage(Conf.MSG_DBG+"MetroLine "+args[2]+" isLoop set to: "+isLoop);
+					boolean isLoop = false;
+					if (args[2].equalsIgnoreCase("t") || args[1].equalsIgnoreCase("true")) {
+						isLoop = true;
+					}
+					if (DataBase.DB.setLoop(args[1], isLoop)) {
+						sender.sendMessage(Conf.MSG_DBG + "MetroLine " + args[1] + " isLoop set to " + isLoop);
+					} else {
+						sender.sendMessage(Conf.MSG_DBG + "MetroLine " + args[1] + " not found");
+					}
+				} else if (args.length == 2) {
+
+					// get loop status of line
+
+					Boolean isLoop = DataBase.DB.getLoop(args[1]);
+					if (isLoop != null) {
+						sender.sendMessage(Conf.MSG_DBG + "MetroLine " + args[1] + " isLoop is " + isLoop);
+					} else {
+						sender.sendMessage(Conf.MSG_DBG + "MetroLine " + args[1] + " not found");
+					}
 				} else {
-					sender.sendMessage(Conf.MSG_DBG+"MetroLine "+args[2]+" not found");
+					sender.sendMessage(Conf.MSG_USAGE);
 				}
 			} else if(args.length == 1 && args[0].equalsIgnoreCase("reload") && sender.hasPermission(PERM_RELOAD)) {
 

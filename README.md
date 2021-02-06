@@ -40,3 +40,33 @@ The station is named `Central Street`.
 #### 4. Enter the minecart (start automatically) and enjoy the trip.
 
 #### 5. When you exit the minecart, it will be removed automatically.
+
+#### 6. To setup a loop line, use command.
+
+Use `/metro loop [Line Name]` to check if a line is loop line.
+
+Use `/metro loop [Line Name] [true|false]` to switch a line to loop / straight line.
+
+## Permissions
+
+### metro.reload
+
+* Reload plugin config.
+
+* Enable/Disable debug mode.
+  
+Default: OP
+
+### metro.create
+
+* Create a new metro station / line.
+
+* Remove a metro station / line.
+
+Default: OP
+
+### metro.use
+
+* Use the metro station.
+
+Default: All Players

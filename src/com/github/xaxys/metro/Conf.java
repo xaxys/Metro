@@ -1,7 +1,6 @@
 package com.github.xaxys.metro;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Note;
 import org.bukkit.configuration.Configuration;
 import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.entity.Player;
@@ -21,18 +20,13 @@ public class Conf {
 	public static final String MSG_DBG = "§e[Metro] §r";
 	public static final String MSG_ERR_ST = "§e[Metro] §eError in §b";
 	public static final String MSG_ERR_MID = "§e: §c";
+	public static final String MSG_NOPERM = "§cYou don't have permission for this";
+	public static final String[] MSG_USAGE = new String[]{
+		"§cUsage: /metro reload",
+		"§cUsage: /metro loop [MetroLine Name] {[true|false]}",
+	};
 	public static final String CONFIG_PATH = "plugins/Metro/config.yml";
 	public static final String DB_PATH = "plugins/Metro/db.bin";
-	public static final Note[] MUSIC_ENTER = new Note[] {
-//			Note.sharp(0, Note.Tone.D),
-//			Note.sharp(0, Note.Tone.A),
-//			Note.flat(1, Note.Tone.G),
-//			Note.sharp(0, Note.Tone.A),
-//			Note.sharp(0, Note.Tone.D),
-//			Note.sharp(0, Note.Tone.A),
-//			Note.flat(0, Note.Tone.F),
-//			Note.sharp(1, Note.Tone.A),
-	};
 	
 	public static MemoryConfiguration defaults = new MemoryConfiguration();
 	public static Configuration config = null;
@@ -70,11 +64,10 @@ public class Conf {
 		if (DEBUG) {
 			String msg = MSG_DBG + str;
 			Bukkit.getConsoleSender().sendMessage(msg);
-			Bukkit.getOnlinePlayers().forEach((p) -> {
-				if (p.hasPermission(Main.PERM_RELOAD)) {
-					p.sendMessage(msg);
-				}
-			});
+			Bukkit.getOnlinePlayers()
+					.parallelStream()
+					.filter(p -> p.hasPermission(Main.PERM_RELOAD))
+					.forEach(p -> p.sendMessage(msg));
 		}
 	}
 
@@ -82,11 +75,10 @@ public class Conf {
 		String msg = MSG_ERR_ST + func + MSG_ERR_MID + cause;
 		Bukkit.getConsoleSender().sendMessage(msg);
 		if (DEBUG) {
-			Bukkit.getOnlinePlayers().forEach((p) -> {
-				if (p.hasPermission(Main.PERM_RELOAD)) {
-					p.sendMessage(msg);
-				}
-			});
+			Bukkit.getOnlinePlayers()
+					.parallelStream()
+					.filter(p -> p.hasPermission(Main.PERM_RELOAD))
+					.forEach(p -> p.sendMessage(msg));
 		}
 	}
 	
