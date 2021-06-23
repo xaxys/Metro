@@ -53,6 +53,22 @@ public class DataBase implements Serializable {
 		MetroLine line = MetroMap.get(lineName);
 		return line == null ? null : line.isLoop;
 	}
+
+	public boolean setSpeed(String lineName, double speed) {
+		if (MetroMap.containsKey(lineName)) {
+			MetroLine line = MetroMap.get(lineName);
+			line.Speed = speed;
+			saveDB(Conf.DB_PATH);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	public Double getSpeed(String lineName) {
+		MetroLine line = MetroMap.get(lineName);
+		return line == null ? null : line.Speed;
+	}
 	
 	public void addStation(MetroStation s, int index) {
 		if (!MetroMap.containsKey(s.LineName)) {

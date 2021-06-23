@@ -1,8 +1,12 @@
 package com.github.xaxys.metro;
 
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.Rail;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
@@ -209,27 +213,85 @@ public class EventListener implements Listener {
 	
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onVehicleMove(VehicleMoveEvent e) {
-		Vehicle v = e.getVehicle();
-		if (v instanceof Minecart) {
-			Route route = DataBase.DB.getRoute(v.getUniqueId());
-			if (route == null) return;
-			if (route.Start == false) {
-				v.setVelocity(new Vector(0, 0, 0));
-				return;
+		if (!(e.getVehicle() instanceof Minecart)) return;
+		Minecart cart = ((Minecart) e.getVehicle());
+
+		Route route = DataBase.DB.getRoute(cart.getUniqueId());
+		if (route == null) return;
+		if (route.Start == false) {
+			cart.setVelocity(new Vector(0, 0, 0));
+			return;
+		}
+		Location loc = cart.getLocation();
+		loc.setX(loc.getBlockX());
+		loc.setY(loc.getBlockY() + 1);
+		loc.setZ(loc.getBlockZ());
+		MetroStation station = DataBase.DB.getStation(loc);
+		if (station == route.Dest) {
+			cart.setVelocity(new Vector(0, 0, 0));
+		}
+		if (station != null) {
+			cart.getPassengers().forEach((p) -> {
+				if (p instanceof Player) {
+					Player player = ((Player) p);
+					player.sendTitle(station.Name, station.LineName, 10, 70, 20);
+					player.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 2, 1);
+				}
+			});
+		}
+
+		// Acceleration
+
+		Acceleration:
+		{
+			Block b = cart.getLocation().getBlock();
+			if (!(b.getBlockData() instanceof Rail)) break Acceleration;
+
+			Rail.Shape shape = ((Rail) b.getBlockData()).getShape();
+			Vector v = e.getVehicle().getVelocity();
+			if (v.getY() != 0) break Acceleration;
+
+			BlockFace face;
+			switch (shape) {
+				case EAST_WEST:
+					face = v.getX() > 0 ? BlockFace.EAST : BlockFace.WEST;
+					break;
+				case NORTH_SOUTH:
+					face = v.getY() > 0 ? BlockFace.SOUTH : BlockFace.NORTH;
+					break;
+				case NORTH_EAST:
+				case SOUTH_WEST:
+					face = v.getX() > 0 ? BlockFace.SOUTH_EAST : BlockFace.NORTH_WEST;
+					break;
+				case NORTH_WEST:
+				case SOUTH_EAST:
+					face = v.getX() > 0 ? BlockFace.NORTH_EAST : BlockFace.SOUTH_WEST;
+					break;
+				default:
+					break Acceleration;
 			}
-			MetroStation station = DataBase.DB.getStation(v.getLocation().add(0, 1, 0));
-			if (station == route.Dest) {
-				v.setVelocity(new Vector(0, 0, 0));
+
+			int flatLength = 0;
+			Block rb = b.getRelative(face);
+			while (flatLength < Conf.ADJUST_LENGTH + Conf.BUFFER_LENGTH) {
+				if (rb.getType() != b.getType()) break;
+				BlockData data = rb.getBlockData();
+				if (((Rail) data).getShape() != shape) break;
+				rb = rb.getRelative(face);
+				flatLength++;
 			}
-			if (station != null) {
-				v.getPassengers().forEach((p) -> {
-					if (p instanceof Player) {
-						Player player = ((Player) p);
-						player.sendTitle(station.Name, station.LineName, 10, 70, 20);
-						player.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 2, 1);
-					}
-				});
-			}
+
+			if (flatLength < Conf.BUFFER_LENGTH) break Acceleration;
+			flatLength -= Conf.BUFFER_LENGTH;
+			double n = (double) flatLength / Conf.ADJUST_LENGTH;
+			double speed = Conf.NORMAL_SPEED + (route.Speed - Conf.NORMAL_SPEED) * n;
+			cart.setMaxSpeed(speed);
+			return;
+		}
+		NoAcceleration:
+		{
+			cart.setMaxSpeed(Conf.NORMAL_SPEED);
+			return;
 		}
 	}
 }

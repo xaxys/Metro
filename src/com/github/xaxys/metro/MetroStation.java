@@ -87,7 +87,7 @@ public class MetroStation implements Serializable {
 			}
 		}
 		Entity cart = loc.getWorld().spawnEntity(loc.add(0, -1, 0), EntityType.MINECART);
-		LastRoute = new Route(this, Dest, cart.getUniqueId());
+		LastRoute = new Route(this, Dest, cart.getUniqueId(), Line.Speed);
 		cart.setCustomName(LastRoute.Orig.Name+"-"+LastRoute.Dest.Name);
 		cart.setCustomNameVisible(true);
 		Conf.dbg("CallCart UUID:"+cart.getUniqueId());

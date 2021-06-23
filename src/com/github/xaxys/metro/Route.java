@@ -8,11 +8,13 @@ public class Route {
 	public MetroStation Dest;
 	public Boolean Start;
 	public UUID CartUUID;
-	
-	public Route(MetroStation orig, MetroStation dest, UUID uuid) {
+	public double Speed;
+
+	public Route(MetroStation orig, MetroStation dest, UUID uuid, double speed) {
 		Orig = orig;
 		Dest = dest;
 		Start = false;
 		CartUUID = uuid;
+		Speed = speed;
 	}
 }

@@ -44,8 +44,7 @@ public class Position implements Serializable {
 
 	public Location toLocation() {
 		World w = Bukkit.getWorld(world);
-		if (w == null) return null;
-		return new Location(w, x.doubleValue(), y.doubleValue(), z.doubleValue());
+		return w == null ? null : new Location(w, x.doubleValue(), y.doubleValue(), z.doubleValue());
 	}
 
 }

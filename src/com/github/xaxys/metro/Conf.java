@@ -21,12 +21,16 @@ public class Conf {
 	public static final String MSG_ERR_ST = "§e[Metro] §eError in §b";
 	public static final String MSG_ERR_MID = "§e: §c";
 	public static final String MSG_NOPERM = "§cYou don't have permission for this";
-	public static final String[] MSG_USAGE = new String[]{
-		"§cUsage: /metro reload",
-		"§cUsage: /metro loop [MetroLine Name] {[true|false]}",
-	};
 	public static final String CONFIG_PATH = "plugins/Metro/config.yml";
 	public static final String DB_PATH = "plugins/Metro/db.bin";
+	public static final int ADJUST_LENGTH = 20;
+	public static final int BUFFER_LENGTH = 3;
+	public static final double NORMAL_SPEED = 0.4;
+	public static final String[] MSG_USAGE = new String[]{
+			"§cUsage: /metro reload",
+			"§cUsage: /metro loop [MetroLine Name] {[true|false]}",
+			"§cUsage: /metro speed [MetroLine Name] {[double value]}",
+	};
 	
 	public static MemoryConfiguration defaults = new MemoryConfiguration();
 	public static Configuration config = null;

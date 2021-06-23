@@ -47,6 +47,22 @@ Use `/metro loop [Line Name]` to check if a line is loop line.
 
 Use `/metro loop [Line Name] [true|false]` to switch a line to loop / straight line.
 
+#### 6. To change default speed of a metro line, use command.
+
+Automatically accelerates the generated minecart when it travels on a long continuous stretch of powered rails.
+
+Use `/metro speed [Line Name]` to display current speed of a metro line.
+
+Use `/metro speed [Line Name] [double value]` to change the speed of a metro line.
+
+Default speed of powered rails: `0.4`.
+
+Recommended max speed: No more than `2.0`.
+
+##### Warning
+
+Please use different rails in (near) a metro station to prevent the minecart from going too fast and not stopping at the station.
+
 ## Permissions
 
 ### metro.reload
@@ -58,6 +74,8 @@ Use `/metro loop [Line Name] [true|false]` to switch a line to loop / straight l
 Default: OP
 
 ### metro.create
+
+* Change the speed of a metro line.
 
 * Create a new metro station / line.
 

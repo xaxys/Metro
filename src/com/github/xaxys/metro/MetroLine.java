@@ -10,6 +10,7 @@ public class MetroLine extends ArrayList<MetroStation> implements Serializable {
 
 	public String Name;
 	boolean isLoop = false;
+	public double Speed = Conf.NORMAL_SPEED;
 	
 	public MetroLine(String name) {
 		super();
