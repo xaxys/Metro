@@ -21,7 +21,7 @@ public class MetroLine extends ArrayList<MetroStation> implements Serializable {
 	public boolean add(MetroStation s) {
 		boolean f = super.add(s);
 		// update index of stop sign
-		if (f) s.setIndex(this.size()-1);
+		if (f) s.setIndex(this.size() - 1);
 		return f;
 	}
 	
@@ -50,6 +50,11 @@ public class MetroLine extends ArrayList<MetroStation> implements Serializable {
 	// complete fields after deserialization.
 	public void complete() {
 		this.forEach((s) -> s.complete(this));
+	}
+	
+	// update index of destination for every station in this line.
+	public void updateDest() {
+		this.forEach((s) -> s.updateDest(this));
 	}
 
 	// return 1 if index of a in MetroLine > index of b in MetroLine

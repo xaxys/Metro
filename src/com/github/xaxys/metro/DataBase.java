@@ -118,11 +118,16 @@ public class DataBase implements Serializable {
 		RouteMap = new HashMap<>();
 	}
 	
-	public void saveDB(String s) {
+	public void updateDest() {
+		MetroMap.forEach((k, v) -> v.updateDest());
+	}
+	
+	public void saveDB(String path) {
+		updateDest();
 		FileOutputStream fos;
 		ObjectOutputStream oos;
 		try {
-			fos = new FileOutputStream(s);
+			fos = new FileOutputStream(path);
 			oos = new ObjectOutputStream(fos);
 			oos.writeObject(this);
 			fos.close();
@@ -132,12 +137,12 @@ public class DataBase implements Serializable {
 		}
 	}
 	
-	public static DataBase readDB(String s) {
+	public static DataBase readDB(String path) {
 		FileInputStream fos;
 		ObjectInputStream oos;
 		DataBase db = null;
 		try {
-			fos = new FileInputStream(s);
+			fos = new FileInputStream(path);
 			oos = new ObjectInputStream(fos);
 			db = (DataBase) oos.readObject();
 			db.complete();

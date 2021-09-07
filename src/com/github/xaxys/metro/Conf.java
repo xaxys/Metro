@@ -5,9 +5,8 @@ import org.bukkit.configuration.Configuration;
 import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.entity.Player;
 
-import com.google.common.collect.Lists;
-
 import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 
 public class Conf {
@@ -45,7 +44,7 @@ public class Conf {
 		defaults.set("error", "[&4Wrong Metro Format&r]");
 		defaults.set("selStart", "&8> &5");
 		defaults.set("selEnd", " &8<");
-		defaults.set("disabled_worlds", Lists.newArrayList("disabled_world"));
+		defaults.set("disabled_worlds", Arrays.asList("disabled_world"));
 	}
 
 	public static void loadConfig() {

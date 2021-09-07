@@ -30,7 +30,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class EventListener implements Listener {
-
+	
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onSignChange(SignChangeEvent e) {
 		if (e.getBlock().getBlockData() instanceof WallSign) {
@@ -80,12 +80,13 @@ public class EventListener implements Listener {
 
 				s.Pos = new Position(e.getBlock().getLocation());
 
-				Util.setSign(e.getBlock(), new String[]{
+				Util.setSign(e.getBlock(), new String[] {
 						Conf.TITLE,
 						s.LineName,
 						"",
 						s.Name,
 				});
+				s.setDestination(s);
 
 				DataBase.DB.addStation(s, stationIdx);
 				Conf.msg(e.getPlayer(), "MetroStation Created");
