@@ -3,3 +3,5 @@ title: '&a[&3&lMetro&a]'
 error: '[&4Wrong Metro Format&r]'
 selStart: '&8> &5'
 selEnd: ' &8<'
+disabled_worlds:
+  - disabled_world

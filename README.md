@@ -47,7 +47,7 @@ Use `/metro loop [Line Name]` to check if a line is loop line.
 
 Use `/metro loop [Line Name] [true|false]` to switch a line to loop / straight line.
 
-#### 6. To change default speed of a metro line, use command.
+#### 7. To change default speed of a metro line, use command.
 
 Automatically accelerates the generated minecart when it travels on a long continuous stretch of powered rails.
 

@@ -30,11 +30,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class EventListener implements Listener {
-
+	
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onSignChange(SignChangeEvent e) {
-		
 		if (e.getBlock().getBlockData() instanceof WallSign) {
+			// Check disabled world
+			if (Conf.DISABLE_WORLDS.contains(e.getBlock().getWorld().getName())) return;
 			if (e.getLine(0).equalsIgnoreCase("[metro]")) {
 				// Check permission
 				if (!e.getPlayer().hasPermission(Main.PERM_CREATE)) {
@@ -79,12 +80,13 @@ public class EventListener implements Listener {
 
 				s.Pos = new Position(e.getBlock().getLocation());
 
-				Util.setSign(e.getBlock(), new String[]{
+				Util.setSign(e.getBlock(), new String[] {
 						Conf.TITLE,
 						s.LineName,
 						"",
 						s.Name,
 				});
+				s.setDestination(s);
 
 				DataBase.DB.addStation(s, stationIdx);
 				Conf.msg(e.getPlayer(), "MetroStation Created");
@@ -96,6 +98,9 @@ public class EventListener implements Listener {
 	public void onPlayerInteract(PlayerInteractEvent e) {
 		if (e.getHand() != EquipmentSlot.HAND) return;
 		if (e.getAction() == Action.RIGHT_CLICK_BLOCK && e.getClickedBlock().getBlockData() instanceof WallSign) {
+			// Check disabled world
+			if (Conf.DISABLE_WORLDS.contains(e.getPlayer().getWorld().getName())) return;
+			
 			MetroStation station = DataBase.DB.getStation(e.getClickedBlock().getLocation());
 			if (station == null) return;
 			e.setCancelled(true);
@@ -123,6 +128,9 @@ public class EventListener implements Listener {
 	public void onBlockPhysics(BlockPhysicsEvent e) {
 		Block b = e.getBlock();
 		if (b.getBlockData() instanceof WallSign) {
+			// Check disabled world
+			if (Conf.DISABLE_WORLDS.contains(b.getWorld().getName())) return;
+			
 			WallSign sign = (WallSign) b.getBlockData();
 			MetroStation station = DataBase.DB.getStation(b.getLocation());
 			if (station == null) return;
@@ -139,6 +147,9 @@ public class EventListener implements Listener {
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onBlockBreak(BlockBreakEvent e) {
 		if (e.getBlock().getBlockData() instanceof WallSign) {
+			// Check disabled world
+			if (Conf.DISABLE_WORLDS.contains(e.getBlock().getWorld().getName())) return;
+			
 			MetroStation station = DataBase.DB.getStation(e.getBlock().getLocation());
 			if (station == null) return;
 
@@ -157,6 +168,9 @@ public class EventListener implements Listener {
 	public void onVehicleEnter(VehicleEnterEvent e) {
 		Vehicle v = e.getVehicle();
 		if (v instanceof Minecart) {
+			// Check disabled world
+			if (Conf.DISABLE_WORLDS.contains(v.getWorld().getName())) return;
+			
 			Route route = DataBase.DB.getRoute(v.getUniqueId());
 			if (route == null) return;
 
@@ -188,6 +202,9 @@ public class EventListener implements Listener {
 	public void onVehicleExit(VehicleExitEvent e) {
 		Vehicle v = e.getVehicle();
 		if (v instanceof Minecart) {
+			// Check disabled world
+			if (Conf.DISABLE_WORLDS.contains(v.getWorld().getName())) return;
+			
 			Route route = DataBase.DB.getRoute(v.getUniqueId());
 			if (route == null) return;
 
@@ -201,6 +218,9 @@ public class EventListener implements Listener {
 	public void onVehicleDestroy(VehicleDestroyEvent e) {
 		Vehicle v = e.getVehicle();
 		if (v instanceof Minecart) {
+			// Check disabled world
+			if (Conf.DISABLE_WORLDS.contains(v.getWorld().getName())) return;
+			
 			Route route = DataBase.DB.getRoute(v.getUniqueId());
 			if (route == null) return;
 
@@ -214,6 +234,10 @@ public class EventListener implements Listener {
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onVehicleMove(VehicleMoveEvent e) {
 		if (!(e.getVehicle() instanceof Minecart)) return;
+		
+		// Check disabled world
+		if (Conf.DISABLE_WORLDS.contains(e.getVehicle().getWorld().getName())) return;
+		
 		Minecart cart = ((Minecart) e.getVehicle());
 
 		Route route = DataBase.DB.getRoute(cart.getUniqueId());

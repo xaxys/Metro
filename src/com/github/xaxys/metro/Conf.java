@@ -6,6 +6,8 @@ import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.entity.Player;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.List;
 
 public class Conf {
 
@@ -15,6 +17,7 @@ public class Conf {
 	public static String ERROR;
 	public static String L_ST;
 	public static String L_END;
+	public static List<String> DISABLE_WORLDS;
 
 	// Constants:
 	public static final String MSG_DBG = "§e[Metro] §r";
@@ -41,6 +44,7 @@ public class Conf {
 		defaults.set("error", "[&4Wrong Metro Format&r]");
 		defaults.set("selStart", "&8> &5");
 		defaults.set("selEnd", " &8<");
+		defaults.set("disabled_worlds", Arrays.asList("disabled_world"));
 	}
 
 	public static void loadConfig() {
@@ -58,7 +62,8 @@ public class Conf {
 			ERROR = c(config.getString("error"));
 			L_ST = c(config.getString("selStart"));
 			L_END = c(config.getString("selEnd"));
-
+			DISABLE_WORLDS = config.getStringList("disabled_worlds");
+			
 		} catch (Exception e) {
 			err("loadConfig", "Caught Exception: " + e.getMessage());
 		}

@@ -25,6 +25,7 @@ public class MetroStation implements Serializable {
 	public String Name;
 	public Direction IncDire;
 	public Position Pos;
+	public int DestIndex;
 	
 	public transient MetroLine Line;
 	public transient MetroStation Dest;
@@ -32,7 +33,15 @@ public class MetroStation implements Serializable {
 	
 	public void complete(MetroLine line) {
 		Line = line;
-		Dest = this;
+		Dest = Line.get(DestIndex);
+	}
+	
+	public void updateDest(MetroLine line) {
+		DestIndex = line.indexOf(Dest);
+		if (DestIndex < 0) {
+			setDestination(this);
+			DestIndex = line.indexOf(this);
+		}
 	}
 	
 	@Override

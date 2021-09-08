@@ -24,7 +24,7 @@ public class Main extends JavaPlugin implements CommandExecutor {
 		Bukkit.getConsoleSender().sendMessage(Conf.MSG_DBG + "§bConfiguraion Loaded!");
 
 		DataBase.DB = DataBase.readDB(Conf.DB_PATH);
-		Bukkit.getConsoleSender().sendMessage(Conf.MSG_DBG+String.format("§b%d Lines and %d Stations Loaded!",
+		Bukkit.getConsoleSender().sendMessage(Conf.MSG_DBG + String.format("§b%d Lines and %d Stations Loaded!",
 				DataBase.DB.MetroMap.size(), DataBase.DB.PositionMap.size()));
 
 		getServer().getPluginManager().registerEvents(new EventListener(), this);
