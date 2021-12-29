@@ -40,7 +40,7 @@ public class Conf {
 
 	public static void initDefaults() {
 		defaults.set("debug", false);
-		defaults.set("title", "&a[&3&lMetro&aS]");
+		defaults.set("title", "&a[&3&lMetro&a]");
 		defaults.set("error", "[&4Wrong Metro Format&r]");
 		defaults.set("selStart", "&8> &5");
 		defaults.set("selEnd", " &8<");

@@ -1,5 +1,6 @@
 package com.github.xaxys.metro;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -207,9 +208,12 @@ public class EventListener implements Listener {
 			
 			Route route = DataBase.DB.getRoute(v.getUniqueId());
 			if (route == null) return;
-
+			
 			DataBase.DB.delRoute(v.getUniqueId());
-			v.remove();
+			// Remove minecart on the next tick to avoid player falling
+			Bukkit.getScheduler().runTask(Main.plugin, () -> {
+				v.remove();
+			});
 			Conf.dbg("onVehicleExit");
 		}
 	}
@@ -265,7 +269,6 @@ public class EventListener implements Listener {
 		}
 
 		// Acceleration
-
 		Acceleration:
 		{
 			Block b = cart.getLocation().getBlock();
