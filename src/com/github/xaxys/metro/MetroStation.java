@@ -6,6 +6,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Minecart;
 
 import java.io.Serializable;
 
@@ -59,11 +60,21 @@ public class MetroStation implements Serializable {
 				LineName, Name, IncDire, Dest.equals(this)? "this" : Dest);
 	}
 	
-	public void setDirection(String s) {
-		if (s.equalsIgnoreCase("n") || s.equalsIgnoreCase("north")) IncDire = Direction.NORTH;
-		if (s.equalsIgnoreCase("s") || s.equalsIgnoreCase("south")) IncDire = Direction.SOUTH;
-		if (s.equalsIgnoreCase("e") || s.equalsIgnoreCase("east")) IncDire = Direction.EAST;
-		if (s.equalsIgnoreCase("w") || s.equalsIgnoreCase("west")) IncDire = Direction.WEST;
+	public boolean setDirection(String s) {
+		if (s.equalsIgnoreCase("n") || s.equalsIgnoreCase("north")) {
+			IncDire = Direction.NORTH;
+			return true;
+		} else if (s.equalsIgnoreCase("s") || s.equalsIgnoreCase("south")) {
+			IncDire = Direction.SOUTH;
+			return true;
+		} else if (s.equalsIgnoreCase("e") || s.equalsIgnoreCase("east")) {
+			IncDire = Direction.EAST;
+			return true;
+		} else if (s.equalsIgnoreCase("w") || s.equalsIgnoreCase("west")) {
+			IncDire = Direction.WEST;
+			return true;
+		}
+		return false;
 	}
 	
 	public void setDestination(MetroStation s) {
@@ -83,6 +94,10 @@ public class MetroStation implements Serializable {
 		}
 	}
 
+	public int getIndex() {
+		return Line.indexOf(this);
+	}
+
 	// spawn a cart near the station
 	// return false if there is a unused cart spawned by this station nearby
 	public boolean callCart() {
@@ -99,6 +114,7 @@ public class MetroStation implements Serializable {
 		LastRoute = new Route(this, Dest, cart.getUniqueId(), Line.Speed);
 		cart.setCustomName(LastRoute.Orig.Name+"-"+LastRoute.Dest.Name);
 		cart.setCustomNameVisible(true);
+		((Minecart) cart).setMaxSpeed(Line.Speed);
 		Conf.dbg("CallCart UUID:"+cart.getUniqueId());
 		DataBase.DB.addRoute(cart.getUniqueId(), LastRoute);
 		return true;

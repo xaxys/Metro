@@ -1,16 +1,19 @@
 main: com.github.xaxys.metro.Main
 name: Metro
-version: 1.3.3
+version: 1.4.0
 author: xaxys
-api-version: 1.18
+api-version: 1.16
 description: Adds Working Metro to Minecraft!
 commands:
   metro:
     description: Metro Plugin Command.
     usage: /metro
 permissions:
+  metro.speed:
+    description: Allows you to change the speed of a metro line.
+    default: op
   metro.create:
-    description: Allow player to create or destory a metro station.
+    description: Allow player to create or destroy a metro station.
     default: op
   metro.use:
     description: Allow player to use a metro station.

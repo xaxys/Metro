@@ -6,6 +6,7 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.Sign;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Rail;
 import org.bukkit.block.data.type.WallSign;
@@ -20,15 +21,12 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.vehicle.VehicleDestroyEvent;
-import org.bukkit.event.vehicle.VehicleEnterEvent;
-import org.bukkit.event.vehicle.VehicleExitEvent;
-import org.bukkit.event.vehicle.VehicleMoveEvent;
+import org.bukkit.event.vehicle.*;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.util.Vector;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.HashMap;
+import java.util.Map;
 
 public class EventListener implements Listener {
 	
@@ -47,7 +45,7 @@ public class EventListener implements Listener {
 				e.setCancelled(true);
 				
 				// Line 0
-				e.setLine(0, Conf.ERROR);
+				Util.setSign(e.getBlock(), Conf.ERROR);
 
 				MetroStation s = new MetroStation();
 				int stationIdx;
@@ -61,13 +59,20 @@ public class EventListener implements Listener {
 				}
 
 				// Line 2
-				Pattern p = Pattern.compile("^(\\d+)([NSEW])$");
-				Matcher m = p.matcher(e.getLine(2));
-				if (m.find()) {
-					s.setDirection(m.group(2));
-					stationIdx = Integer.parseInt(m.group(1));
-				} else {
-					Conf.msg(e.getPlayer(), "StationIndex or Direction is missing on row 2!");
+				Router.Rule rule = Router.Rule.parse(e.getLine(2));
+				if (rule == null) {
+					Conf.msg(e.getPlayer(), "Invalid Format on row 2!");
+					return;
+				}
+				Integer parsedStationIdx = rule.getExact();
+				if (parsedStationIdx == null) {
+					Conf.msg(e.getPlayer(), "Invalid StationIndex on row 2!");
+					return;
+				}
+				stationIdx = parsedStationIdx;
+				Direction dir = rule.getDirection();
+				if (!s.setDirection(dir.toShortString())) {
+					Conf.msg(e.getPlayer(), "Invalid Direction on row 2!");
 					return;
 				}
 
@@ -91,6 +96,33 @@ public class EventListener implements Listener {
 
 				DataBase.DB.addStation(s, stationIdx);
 				Conf.msg(e.getPlayer(), "MetroStation Created");
+
+			} else if (e.getLine(0).equalsIgnoreCase("[metro:router]")) {
+				// Check permission
+				if (!e.getPlayer().hasPermission(Main.PERM_CREATE)) {
+					Conf.msg(e.getPlayer(), Conf.MSG_NOPERM);
+					return;
+				}
+				e.setCancelled(true);
+
+				// Line 0
+				Util.setSign(e.getBlock(), Conf.ERROR);
+
+				// Line 1-3
+				for (int i = 1; i < 4; i++) {
+					if (!e.getLine(i).isEmpty() && Router.Rule.parse(e.getLine(i)) == null) {
+						Conf.msg(e.getPlayer(), "Invalid rule on row " + i);
+						return;
+					}
+				}
+
+				Util.setSign(e.getBlock(), new String[] {
+						Conf.TITLE,
+						e.getLine(1),
+						e.getLine(2),
+						e.getLine(3),
+				});
+				Conf.msg(e.getPlayer(), "Router Created");
 			}
 		}
 	}
@@ -234,22 +266,75 @@ public class EventListener implements Listener {
 			Conf.dbg("onVehicleDestroy");
 		}
 	}
+
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onVehicleCollision(VehicleEntityCollisionEvent e) {
+		Vehicle v = e.getVehicle();
+		if (!(v instanceof Minecart)) return;
+
+		// Except: disabled world
+		if (Conf.DISABLE_WORLDS.contains(v.getWorld().getName())) return;
+
+		// Except: non-metro cart
+		Route route = DataBase.DB.getRoute(v.getUniqueId());
+		if (route == null) return;
+
+		// Except: empty cart should be able to be collided
+		if (v.getPassengers().isEmpty()) return;
+
+		e.setCancelled(true);
+		Conf.dbg("onVehicleCollision");
+	}
+
+	private static Map<Direction, Rail.Shape> railShape = new HashMap<Direction, Rail.Shape>() {{
+		put(Direction.NORTH, Rail.Shape.NORTH_SOUTH);
+		put(Direction.SOUTH, Rail.Shape.NORTH_SOUTH);
+		put(Direction.WEST, Rail.Shape.EAST_WEST);
+		put(Direction.EAST, Rail.Shape.EAST_WEST);
+		put(Direction.NORTH_WEST, Rail.Shape.NORTH_WEST);
+		put(Direction.NORTH_EAST, Rail.Shape.NORTH_EAST);
+		put(Direction.SOUTH_WEST, Rail.Shape.SOUTH_WEST);
+		put(Direction.SOUTH_EAST, Rail.Shape.SOUTH_EAST);
+		put(Direction.ASCENDING_EAST, Rail.Shape.ASCENDING_EAST);
+		put(Direction.ASCENDING_WEST, Rail.Shape.ASCENDING_WEST);
+		put(Direction.ASCENDING_NORTH, Rail.Shape.ASCENDING_NORTH);
+		put(Direction.ASCENDING_SOUTH, Rail.Shape.ASCENDING_SOUTH);
+		put(Direction.DESCENDING_EAST, Rail.Shape.ASCENDING_WEST);
+		put(Direction.DESCENDING_WEST, Rail.Shape.ASCENDING_EAST);
+		put(Direction.DESCENDING_NORTH, Rail.Shape.ASCENDING_SOUTH);
+		put(Direction.DESCENDING_SOUTH, Rail.Shape.ASCENDING_NORTH);
+	}};
+
+	private static Map<Rail.Shape, Vector> railVec = new HashMap<Rail.Shape, Vector>() {{
+		put(Rail.Shape.NORTH_SOUTH, new Vector(0, 0, 1));
+		put(Rail.Shape.EAST_WEST, new Vector(1, 0, 0));
+		put(Rail.Shape.ASCENDING_EAST, new Vector(1, 1, 0));
+		put(Rail.Shape.ASCENDING_WEST, new Vector(-1, 1, 0));
+		put(Rail.Shape.ASCENDING_NORTH, new Vector(0, 1, -1));
+		put(Rail.Shape.ASCENDING_SOUTH, new Vector(0, 1, 1));
+		put(Rail.Shape.SOUTH_EAST, new Vector(-1, 0, 1));
+		put(Rail.Shape.NORTH_WEST, new Vector(-1, 0, 1));
+		put(Rail.Shape.SOUTH_WEST, new Vector(1, 0, 1));
+		put(Rail.Shape.NORTH_EAST, new Vector(1, 0, 1));
+	}};
 	
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onVehicleMove(VehicleMoveEvent e) {
 		if (!(e.getVehicle() instanceof Minecart)) return;
+		Minecart cart = ((Minecart) e.getVehicle());
 		
 		// Check disabled world
 		if (Conf.DISABLE_WORLDS.contains(e.getVehicle().getWorld().getName())) return;
-		
-		Minecart cart = ((Minecart) e.getVehicle());
 
 		Route route = DataBase.DB.getRoute(cart.getUniqueId());
 		if (route == null) return;
+
 		if (route.Start == false) {
 			cart.setVelocity(new Vector(0, 0, 0));
 			return;
 		}
+
+		// Detect station
 		Location loc = cart.getLocation();
 		loc.setX(loc.getBlockX());
 		loc.setY(loc.getBlockY() + 1);
@@ -257,6 +342,7 @@ public class EventListener implements Listener {
 		MetroStation station = DataBase.DB.getStation(loc);
 		if (station == route.Dest) {
 			cart.setVelocity(new Vector(0, 0, 0));
+			return;
 		}
 		if (station != null) {
 			cart.getPassengers().forEach((p) -> {
@@ -268,57 +354,107 @@ public class EventListener implements Listener {
 			});
 		}
 
-		// Acceleration
+		// Detect switcher
+		Switcher:
+		{
+			Location loc2 = cart.getLocation();
+			loc2.setX(loc2.getBlockX());
+			loc2.setY(loc2.getBlockY() - 2);
+			loc2.setZ(loc2.getBlockZ());
+
+			if (!(loc2.getBlock().getBlockData() instanceof WallSign)) break Switcher;
+
+			Sign sign = (Sign) loc2.getBlock().getState();
+			if (!sign.getLine(0).equals(Conf.TITLE)) break Switcher;
+
+			Router router = new Router();
+			router.addRule(sign.getLine(1));
+			router.addRule(sign.getLine(2));
+			router.addRule(sign.getLine(3));
+
+			Direction direction = router.getDirection(route.Dest.getIndex());
+			if (direction == null || direction == Direction.NONE) break Switcher;
+
+			// Change direction
+			WallSign wallSign = (WallSign) loc2.getBlock().getBlockData();
+			BlockFace face = wallSign.getFacing().getOppositeFace();
+			Block block = loc2.getBlock().getRelative(face).getRelative(0, 2, 0);
+			if (block.getType() != Material.RAIL) break Switcher;
+
+			Rail rail = (Rail) block.getBlockData();
+			rail.setShape(railShape.get(direction));
+			block.setBlockData(rail);
+			Conf.dbg(String.format("Switcher: %s -> %s", route.Dest.Name, direction));
+		}
+
+		double speed = Conf.NORMAL_SPEED;
+
+		// Slow down
+		if (route.Speed <= Conf.NORMAL_SPEED) {
+			speed = route.Speed;
+		}
+
+		// Speed up
 		Acceleration:
 		{
+			Vector v = e.getVehicle().getVelocity();
 			Block b = cart.getLocation().getBlock();
 			if (!(b.getBlockData() instanceof Rail)) break Acceleration;
 
 			Rail.Shape shape = ((Rail) b.getBlockData()).getShape();
-			Vector v = e.getVehicle().getVelocity();
-			if (v.getY() != 0) break Acceleration;
+			Vector face = railVec.get(shape);
 
-			BlockFace face;
-			switch (shape) {
-				case EAST_WEST:
-					face = v.getX() > 0 ? BlockFace.EAST : BlockFace.WEST;
-					break;
-				case NORTH_SOUTH:
-					face = v.getY() > 0 ? BlockFace.SOUTH : BlockFace.NORTH;
-					break;
-				case NORTH_EAST:
-				case SOUTH_WEST:
-					face = v.getX() > 0 ? BlockFace.SOUTH_EAST : BlockFace.NORTH_WEST;
-					break;
-				case NORTH_WEST:
-				case SOUTH_EAST:
-					face = v.getX() > 0 ? BlockFace.NORTH_EAST : BlockFace.SOUTH_WEST;
-					break;
-				default:
-					break Acceleration;
-			}
+			// Not Slant and not Powered Rail
+			if (!(face.getX() != 0 && face.getZ() != 0) && b.getType() != Material.POWERED_RAIL) break Acceleration;
 
-			int flatLength = 0;
-			Block rb = b.getRelative(face);
-			while (flatLength < Conf.ADJUST_LENGTH + Conf.BUFFER_LENGTH) {
-				if (rb.getType() != b.getType()) break;
-				BlockData data = rb.getBlockData();
-				if (((Rail) data).getShape() != shape) break;
-				rb = rb.getRelative(face);
-				flatLength++;
-			}
+			int frontFlatLength = getFlatLength(b, shape, face);
+			int backFlatLength = getFlatLength(b, shape, face.multiply(-1));
+			int flatLength = Math.min(frontFlatLength, backFlatLength);
+
+			// back to original
+			face.multiply(-1);
 
 			if (flatLength < Conf.BUFFER_LENGTH) break Acceleration;
 			flatLength -= Conf.BUFFER_LENGTH;
-			double n = (double) flatLength / Conf.ADJUST_LENGTH;
-			double speed = Conf.NORMAL_SPEED + (route.Speed - Conf.NORMAL_SPEED) * n;
-			cart.setMaxSpeed(speed);
+			double coefficient = (double) flatLength / Conf.ADJUST_LENGTH;
+			speed = Conf.NORMAL_SPEED + (route.Speed - Conf.NORMAL_SPEED) * coefficient;
+
+			// ascending max speed
+			if (face.getY() != 0 && (v.getX() * face.getX() > 0.01 || v.getZ() * face.getZ() > 0.01) && speed > Conf.ASCENDING_MAX_SPEED) {
+				speed = Conf.ASCENDING_MAX_SPEED;
+				Conf.dbg("Speed up: Ascending max speed");
+			}
+
+			// descending max speed
+			if (face.getY() != 0 && (v.getX() * face.getX() < -0.01 || v.getZ() * face.getZ() < -0.01) && speed > Conf.DESCENDING_MAX_SPEED) {
+				speed = Conf.DESCENDING_MAX_SPEED;
+				Conf.dbg("Speed up: Descending max speed");
+			}
+		}
+
+		Vector vel = cart.getVelocity().normalize().multiply(speed);
+		try {
+			vel.checkFinite();
+		} catch (IllegalArgumentException ex) {
 			return;
 		}
-		NoAcceleration:
-		{
-			cart.setMaxSpeed(Conf.NORMAL_SPEED);
-			return;
+		cart.setVelocity(vel);
+	}
+
+	private boolean isAscending(Vector v) {
+		return v.getY() > 0.01;
+	}
+
+	private int getFlatLength(Block b, Rail.Shape shape, Vector face) {
+		int flatLength = 0;
+		Block rb = b.getRelative(face.getBlockX(), face.getBlockY(), face.getBlockZ());
+
+		while (flatLength < Conf.ADJUST_LENGTH + Conf.BUFFER_LENGTH) {
+			if (rb.getType() != b.getType()) break;
+			if (((Rail) rb.getBlockData()).getShape() != shape) break;
+			rb = rb.getRelative(face.getBlockX(), face.getBlockY(), face.getBlockZ());
+			flatLength++;
 		}
+		return flatLength;
 	}
 }

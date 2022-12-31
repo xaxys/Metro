@@ -13,6 +13,7 @@ public class Main extends JavaPlugin implements CommandExecutor {
 	public static Main plugin;
 	public static final String PERM_RELOAD = "metro.reload";
 	public static final String PERM_CREATE = "metro.create";
+	public static final String PERM_SPEED = "metro.speed";
 	public static final String PERM_USE = "metro.use";
 	
 	@Override
@@ -21,7 +22,7 @@ public class Main extends JavaPlugin implements CommandExecutor {
 		Conf.initDefaults();
 
 		Conf.loadConfig();
-		Bukkit.getConsoleSender().sendMessage(Conf.MSG_DBG + "§bConfiguraion Loaded!");
+		Bukkit.getConsoleSender().sendMessage(Conf.MSG_DBG + "§bConfiguration Loaded!");
 
 		DataBase.DB = DataBase.readDB(Conf.DB_PATH);
 		Bukkit.getConsoleSender().sendMessage(Conf.MSG_DBG + String.format("§b%d Lines and %d Stations Loaded!",
@@ -81,7 +82,7 @@ public class Main extends JavaPlugin implements CommandExecutor {
 					}
 				} else if (args[0].equalsIgnoreCase("speed")) {
 
-					if (!(sender instanceof ConsoleCommandSender) && !sender.hasPermission(PERM_CREATE)) {
+					if (!(sender instanceof ConsoleCommandSender) && !sender.hasPermission(PERM_SPEED)) {
 						sender.sendMessage(Conf.MSG_NOPERM);
 						break SuccessfulHandle;
 					}
@@ -134,6 +135,7 @@ public class Main extends JavaPlugin implements CommandExecutor {
 					// enable/disable debug mode
 
 					Conf.DEBUG = !Conf.DEBUG;
+					getConfig().set("debug", Conf.DEBUG);
 					sender.sendMessage("§aMetro Plugin DebugMode:" + Conf.DEBUG);
 				}
 				return true;
