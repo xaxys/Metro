@@ -100,28 +100,9 @@ That means:
 
 - When a minecart whose destination is not list above, The shape of the rail will be changed to `SE` (A shape that connects to the south and east rails).
 
-If you don't set default rule (like `SE`, no number before direction), the rail will not be changed.
+If you don't set default rule (like `SE`, no number before the direction), the rail will not be changed.
 
-Also, `AE` (ascending east) is supported.
-
-Example
-
-```
-[Metro]
-Line 1
-1S
-Central Street
-```
-
-That means:
-
-The station belongs to `Line 1` .
-
-It is the second station in `Line 1` (count from 0).
-
-To the next station, cart goes south.
-
-The station is named `Central Street`.
+Also, `AE` (ascending east), `AS`, `AW`, `AN`, `DE` (descending east), `DS`, `DW`, `DN` are supported.
 
 ### Warning
 
