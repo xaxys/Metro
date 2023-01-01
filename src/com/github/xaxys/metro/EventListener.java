@@ -472,6 +472,7 @@ public class EventListener implements Listener {
 			// if not powered rail, and the rail is not router, stop
 			if (rb.getType() != b.getType()) {
 				if (rb.getType() != Material.RAIL) break;
+				if (direction.isAscending() || direction.isDescending()) break;
 				Block routerSign = rb.getRelative(0, -2, 0).getRelative(direction.opposite().toBlockFace());
 				Direction routerDirection = checkRoutingDestination(routerSign, direction, destIndex);
 				if (routerDirection == null) break;
