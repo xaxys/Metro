@@ -15,22 +15,22 @@ public class Conf {
 	public static boolean DEBUG;
 	public static String TITLE;
 	public static String ERROR;
-	public static String L_ST;
-	public static String L_END;
+	public static int ADJUST_LENGTH = 12;
+	public static int BUFFER_LENGTH = 3;
+	public static double NORMAL_SPEED = 0.4;
+	public static double ASCENDING_MAX_SPEED = 0.6;
+	public static double DESCENDING_MAX_SPEED = 1.2;
 	public static List<String> DISABLE_WORLDS;
 
 	// Constants:
+	public static final String L_ST = "§8> §5";
+	public static final String L_END = " §8<";
 	public static final String MSG_DBG = "§e[Metro] §r";
 	public static final String MSG_ERR_ST = "§e[Metro] §eError in §b";
 	public static final String MSG_ERR_MID = "§e: §c";
 	public static final String MSG_NOPERM = "§cYou don't have permission for this";
 	public static final String CONFIG_PATH = "plugins/Metro/config.yml";
 	public static final String DB_PATH = "plugins/Metro/db.bin";
-	public static final int ADJUST_LENGTH = 12;
-	public static final int BUFFER_LENGTH = 3;
-	public static final double NORMAL_SPEED = 0.4;
-	public static final double ASCENDING_MAX_SPEED = 0.8;
-	public static final double DESCENDING_MAX_SPEED = 1.2;
 	public static final String[] MSG_USAGE = new String[]{
 			"§cUsage: /metro reload",
 			"§cUsage: /metro loop [MetroLine Name] {[true|false]}",
@@ -44,8 +44,11 @@ public class Conf {
 		defaults.set("debug", false);
 		defaults.set("title", "&a[&3&lMetro&a]");
 		defaults.set("error", "[&4Wrong Metro Format&r]");
-		defaults.set("selStart", "&8> &5");
-		defaults.set("selEnd", " &8<");
+		defaults.set("ascending_speed", 0.6);
+		defaults.set("descending_speed", 1.2);
+		defaults.set("normal_speed", 0.4);
+		defaults.set("adjust_length", 12);
+		defaults.set("buffer_length", 3);
 		defaults.set("disabled_worlds", Arrays.asList("disabled_world"));
 	}
 
@@ -62,8 +65,11 @@ public class Conf {
 			DEBUG = config.getBoolean("debug");
 			TITLE = c(config.getString("title"));
 			ERROR = c(config.getString("error"));
-			L_ST = c(config.getString("selStart"));
-			L_END = c(config.getString("selEnd"));
+			ASCENDING_MAX_SPEED = config.getDouble("ascending_speed");
+			DESCENDING_MAX_SPEED = config.getDouble("descending_speed");
+			NORMAL_SPEED = config.getDouble("normal_speed");
+			ADJUST_LENGTH = config.getInt("adjust_length");
+			BUFFER_LENGTH = config.getInt("buffer_length");
 			DISABLE_WORLDS = config.getStringList("disabled_worlds");
 			
 		} catch (Exception e) {

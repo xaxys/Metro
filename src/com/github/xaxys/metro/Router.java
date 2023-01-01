@@ -84,9 +84,10 @@ public class Router {
                     Value[] value_list = new Value[values.length];
                     for (int i = 0; i < values.length; i++) {
                         Pattern range_pattern = Pattern.compile("^(-?\\d+)-(-?\\d+)$");
-                        if (range_pattern.matcher(rule).find()) {
-                            String min = m.group(1);
-                            String max = m.group(2);
+                        Matcher m2 = range_pattern.matcher(values[i]);
+                        if (m2.find()) {
+                            String min = m2.group(1);
+                            String max = m2.group(2);
                             value_list[i] = new Range(Integer.parseInt(min), Integer.parseInt(max));
                         } else {
                             value_list[i] = new Exact(Integer.parseInt(values[i]));

@@ -7,7 +7,6 @@ import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
-import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Rail;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Minecart;
@@ -24,9 +23,6 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.vehicle.*;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.util.Vector;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class EventListener implements Listener {
 	
@@ -285,153 +281,107 @@ public class EventListener implements Listener {
 		e.setCancelled(true);
 		Conf.dbg("onVehicleCollision");
 	}
-
-	private static Map<Direction, Rail.Shape> railShape = new HashMap<Direction, Rail.Shape>() {{
-		put(Direction.NORTH, Rail.Shape.NORTH_SOUTH);
-		put(Direction.SOUTH, Rail.Shape.NORTH_SOUTH);
-		put(Direction.WEST, Rail.Shape.EAST_WEST);
-		put(Direction.EAST, Rail.Shape.EAST_WEST);
-		put(Direction.NORTH_WEST, Rail.Shape.NORTH_WEST);
-		put(Direction.NORTH_EAST, Rail.Shape.NORTH_EAST);
-		put(Direction.SOUTH_WEST, Rail.Shape.SOUTH_WEST);
-		put(Direction.SOUTH_EAST, Rail.Shape.SOUTH_EAST);
-		put(Direction.ASCENDING_EAST, Rail.Shape.ASCENDING_EAST);
-		put(Direction.ASCENDING_WEST, Rail.Shape.ASCENDING_WEST);
-		put(Direction.ASCENDING_NORTH, Rail.Shape.ASCENDING_NORTH);
-		put(Direction.ASCENDING_SOUTH, Rail.Shape.ASCENDING_SOUTH);
-		put(Direction.DESCENDING_EAST, Rail.Shape.ASCENDING_WEST);
-		put(Direction.DESCENDING_WEST, Rail.Shape.ASCENDING_EAST);
-		put(Direction.DESCENDING_NORTH, Rail.Shape.ASCENDING_SOUTH);
-		put(Direction.DESCENDING_SOUTH, Rail.Shape.ASCENDING_NORTH);
-	}};
-
-	private static Map<Rail.Shape, Vector> railVec = new HashMap<Rail.Shape, Vector>() {{
-		put(Rail.Shape.NORTH_SOUTH, new Vector(0, 0, 1));
-		put(Rail.Shape.EAST_WEST, new Vector(1, 0, 0));
-		put(Rail.Shape.ASCENDING_EAST, new Vector(1, 1, 0));
-		put(Rail.Shape.ASCENDING_WEST, new Vector(-1, 1, 0));
-		put(Rail.Shape.ASCENDING_NORTH, new Vector(0, 1, -1));
-		put(Rail.Shape.ASCENDING_SOUTH, new Vector(0, 1, 1));
-		put(Rail.Shape.SOUTH_EAST, new Vector(-1, 0, 1));
-		put(Rail.Shape.NORTH_WEST, new Vector(-1, 0, 1));
-		put(Rail.Shape.SOUTH_WEST, new Vector(1, 0, 1));
-		put(Rail.Shape.NORTH_EAST, new Vector(1, 0, 1));
-	}};
 	
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onVehicleMove(VehicleMoveEvent e) {
+		// Check cart
 		if (!(e.getVehicle() instanceof Minecart)) return;
 		Minecart cart = ((Minecart) e.getVehicle());
 		
 		// Check disabled world
 		if (Conf.DISABLE_WORLDS.contains(e.getVehicle().getWorld().getName())) return;
 
+		// Check metro cart
 		Route route = DataBase.DB.getRoute(cart.getUniqueId());
 		if (route == null) return;
 
+		// Check if the cart is started
 		if (route.Start == false) {
 			cart.setVelocity(new Vector(0, 0, 0));
 			return;
 		}
 
 		// Detect station
-		Location loc = cart.getLocation();
-		loc.setX(loc.getBlockX());
-		loc.setY(loc.getBlockY() + 1);
-		loc.setZ(loc.getBlockZ());
-		MetroStation station = DataBase.DB.getStation(loc);
-		if (station == route.Dest) {
-			cart.setVelocity(new Vector(0, 0, 0));
-			return;
-		}
-		if (station != null) {
-			cart.getPassengers().forEach((p) -> {
-				if (p instanceof Player) {
-					Player player = ((Player) p);
-					player.sendTitle(station.Name, station.LineName, 10, 70, 20);
-					player.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 2, 1);
-				}
-			});
-		}
+		if (detectStation(cart, route)) return;
 
-		// Detect switcher
-		Switcher:
-		{
-			Location loc2 = cart.getLocation();
-			loc2.setX(loc2.getBlockX());
-			loc2.setY(loc2.getBlockY() - 2);
-			loc2.setZ(loc2.getBlockZ());
+		// Detect railways
+		Block railBlock = cart.getLocation().getBlock();
+		if (!(railBlock.getBlockData() instanceof Rail)) return;
+		Rail railData = (Rail) railBlock.getBlockData();
 
-			if (!(loc2.getBlock().getBlockData() instanceof WallSign)) break Switcher;
+		// Get Velocity Direction
+		// When ascending or descending, the velocity of vehicle in Y-axis is still 0
+		// So we need to the Rail.Shape to do second check
+		Direction direction;
+		Direction velocityDirection = Direction.parse(cart.getVelocity());
+		Direction shapeDirection = Direction.parse(railData.getShape());
+		if (velocityDirection == null) return;
+		if (shapeDirection == null) return;
 
-			Sign sign = (Sign) loc2.getBlock().getState();
-			if (!sign.getLine(0).equals(Conf.TITLE)) break Switcher;
-
-			Router router = new Router();
-			router.addRule(sign.getLine(1));
-			router.addRule(sign.getLine(2));
-			router.addRule(sign.getLine(3));
-
-			Direction direction = router.getDirection(route.Dest.getIndex());
-			if (direction == null || direction == Direction.NONE) break Switcher;
-
-			// Change direction
-			WallSign wallSign = (WallSign) loc2.getBlock().getBlockData();
-			BlockFace face = wallSign.getFacing().getOppositeFace();
-			Block block = loc2.getBlock().getRelative(face).getRelative(0, 2, 0);
-			if (block.getType() != Material.RAIL) break Switcher;
-
-			Rail rail = (Rail) block.getBlockData();
-			rail.setShape(railShape.get(direction));
-			block.setBlockData(rail);
-			Conf.dbg(String.format("Switcher: %s -> %s", route.Dest.Name, direction));
+		if (shapeDirection.isAscending()) {
+			direction = shapeDirection;
+			// if rail is ascending, the velocity direction is opposite to the shape direction
+			// then the velocity in Y-axis should be negative (i.e. descending)
+			if ((shapeDirection.isEast() || shapeDirection.isWest()) && velocityDirection.isEast() != shapeDirection.isEast()) {
+				direction = direction.opposite();
+			} else if ((shapeDirection.isNorth() || shapeDirection.isSouth()) && velocityDirection.isNorth() != shapeDirection.isNorth()) {
+				direction = direction.opposite();
+			}
+		} else {
+			direction = velocityDirection;
 		}
 
-		double speed = Conf.NORMAL_SPEED;
+		// Detect Router
+		detectRouter(cart.getLocation(), route, direction);
 
-		// Slow down
+		// Handle Speed
+
+		// Slow down or Normal
+		// Speed is already limited by the setMaxSpeed() method
 		if (route.Speed <= Conf.NORMAL_SPEED) {
-			speed = route.Speed;
+			Conf.dbg("No acceleration");
+			return;
 		}
 
 		// Speed up
 		Acceleration:
 		{
-			Vector v = e.getVehicle().getVelocity();
-			Block b = cart.getLocation().getBlock();
-			if (!(b.getBlockData() instanceof Rail)) break Acceleration;
+			// Not Oblique and not Powered Rail
+			if (!direction.isOblique() && railBlock.getType() != Material.POWERED_RAIL) break Acceleration;
 
-			Rail.Shape shape = ((Rail) b.getBlockData()).getShape();
-			Vector face = railVec.get(shape);
-
-			// Not Slant and not Powered Rail
-			if (!(face.getX() != 0 && face.getZ() != 0) && b.getType() != Material.POWERED_RAIL) break Acceleration;
-
-			int frontFlatLength = getFlatLength(b, shape, face);
-			int backFlatLength = getFlatLength(b, shape, face.multiply(-1));
+			// Get Flat Length and Detect Router
+			int frontFlatLength = getFlatLength(railBlock, direction, route.Dest.getIndex(), true);
+			int backFlatLength = getFlatLength(railBlock, direction, route.Dest.getIndex(), false);
 			int flatLength = Math.min(frontFlatLength, backFlatLength);
-
-			// back to original
-			face.multiply(-1);
 
 			if (flatLength < Conf.BUFFER_LENGTH) break Acceleration;
 			flatLength -= Conf.BUFFER_LENGTH;
 			double coefficient = (double) flatLength / Conf.ADJUST_LENGTH;
-			speed = Conf.NORMAL_SPEED + (route.Speed - Conf.NORMAL_SPEED) * coefficient;
+			double speed = Conf.NORMAL_SPEED + (route.Speed - Conf.NORMAL_SPEED) * coefficient;
 
 			// ascending max speed
-			if (face.getY() != 0 && (v.getX() * face.getX() > 0.01 || v.getZ() * face.getZ() > 0.01) && speed > Conf.ASCENDING_MAX_SPEED) {
+			if (direction.isAscending() && speed > Conf.ASCENDING_MAX_SPEED) {
 				speed = Conf.ASCENDING_MAX_SPEED;
 				Conf.dbg("Speed up: Ascending max speed");
 			}
 
 			// descending max speed
-			if (face.getY() != 0 && (v.getX() * face.getX() < -0.01 || v.getZ() * face.getZ() < -0.01) && speed > Conf.DESCENDING_MAX_SPEED) {
+			if (direction.isDescending() && speed > Conf.DESCENDING_MAX_SPEED) {
 				speed = Conf.DESCENDING_MAX_SPEED;
 				Conf.dbg("Speed up: Descending max speed");
 			}
-		}
 
+			cart.setMaxSpeed(speed);
+			setCartSpeed(cart, speed);
+
+			Conf.dbg(String.format("Speed up: %f, Flat Length: %d, Direction: %s", speed, flatLength, direction));
+			return;
+		}
+		cart.setMaxSpeed(Conf.NORMAL_SPEED);
+		Conf.dbg("Speed up: Normal Speed");
+	}
+
+	private static void setCartSpeed(Minecart cart, double speed) {
 		Vector vel = cart.getVelocity().normalize().multiply(speed);
 		try {
 			vel.checkFinite();
@@ -441,18 +391,96 @@ public class EventListener implements Listener {
 		cart.setVelocity(vel);
 	}
 
-	private boolean isAscending(Vector v) {
-		return v.getY() > 0.01;
+	private static boolean detectStation(Minecart cart, Route route) {
+		Location loc = cart.getLocation();
+		loc.setX(loc.getBlockX());
+		loc.setY(loc.getBlockY() + 1);
+		loc.setZ(loc.getBlockZ());
+		MetroStation station = DataBase.DB.getStation(loc);
+		if (station != null) {
+			cart.getPassengers().forEach((p) -> {
+				if (p instanceof Player) {
+					Player player = ((Player) p);
+					player.sendTitle(station.Name, station.LineName, 10, 70, 20);
+					player.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 2, 1);
+				}
+			});
+			if (station == route.Dest) {
+				cart.setVelocity(new Vector(0, 0, 0));
+				return true;
+			}
+		}
+		return false;
 	}
 
-	private int getFlatLength(Block b, Rail.Shape shape, Vector face) {
+	// Location is the center of the rail
+	private static void detectRouter(Location loc, Route route, Direction direction) {
+		Location signLoc = loc.clone();
+		signLoc.setX(loc.getBlockX());
+		signLoc.setY(loc.getBlockY() - 2);
+		signLoc.setZ(loc.getBlockZ());
+		Block sign = signLoc.getBlock();
+
+		Direction routerDirection = checkRoutingDestination(sign, direction, route.Dest.getIndex());
+		if (routerDirection == null || routerDirection == Direction.NONE) return;
+
+		Block rail = loc.getBlock().getRelative(direction.toBlockFace());
+		changeDirection(rail, routerDirection);
+		Conf.dbg(String.format("Router Applied: %s -> %s", route.Dest.Name, direction));
+	}
+
+	private static void changeDirection(Block block, Direction direction) {
+		if (block.getType() != Material.RAIL) return;
+		Rail rail = (Rail) block.getBlockData();
+		rail.setShape(direction.toRailShape());
+		block.setBlockData(rail, false);
+	}
+
+	private static Direction checkRoutingDestination(Block block, Direction cartDirection, int destIndex) {
+		// BlockFace of WallSign should be opposite to the cart direction
+		Router router = checkRouter(block, cartDirection.opposite().toBlockFace());
+		if (router == null) return null;
+
+		return router.getDirection(destIndex);
+	}
+
+	private static Router checkRouter(Block block, BlockFace face) {
+		if (!(block.getBlockData() instanceof WallSign)) return null;
+		WallSign wallSign = (WallSign) block.getBlockData();
+
+		if (wallSign.getFacing() != face) return null;
+
+		Sign sign = (Sign) block.getState();
+		if (!sign.getLine(0).equals(Conf.TITLE)) return null;
+
+		Router router = new Router();
+		router.addRule(sign.getLine(1));
+		router.addRule(sign.getLine(2));
+		router.addRule(sign.getLine(3));
+
+		Conf.dbg(String.format("Router Detected: %s", router));
+		return router;
+	}
+
+	private int getFlatLength(Block b, Direction direction, int destIndex, boolean changeRouter) {
 		int flatLength = 0;
-		Block rb = b.getRelative(face.getBlockX(), face.getBlockY(), face.getBlockZ());
+		Rail.Shape shape = ((Rail) b.getBlockData()).getShape();
+		Vector v = direction.toVector();
+		Block rb = b.getRelative(v.getBlockX(), v.getBlockY(), v.getBlockZ());
 
 		while (flatLength < Conf.ADJUST_LENGTH + Conf.BUFFER_LENGTH) {
-			if (rb.getType() != b.getType()) break;
+			// if not powered rail, and the rail is not router, stop
+			if (rb.getType() != b.getType()) {
+				if (rb.getType() != Material.RAIL) break;
+				Block routerSign = rb.getRelative(0, -2, 0).getRelative(direction.opposite().toBlockFace());
+				Direction routerDirection = checkRoutingDestination(routerSign, direction, destIndex);
+				if (routerDirection == null) break;
+				// accelerate will not be stopped only when the routing direction is straight
+				if (!routerDirection.isStraight()) break;
+				if (changeRouter) changeDirection(rb, routerDirection);
+			}
 			if (((Rail) rb.getBlockData()).getShape() != shape) break;
-			rb = rb.getRelative(face.getBlockX(), face.getBlockY(), face.getBlockZ());
+			rb = rb.getRelative(v.getBlockX(), v.getBlockY(), v.getBlockZ());
 			flatLength++;
 		}
 		return flatLength;

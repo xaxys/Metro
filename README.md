@@ -59,32 +59,102 @@ Default speed of powered rails: `0.4`.
 
 Recommended max speed: No more than `2.0`.
 
-##### Warning
+### New Feature: Router (above v1.4)
 
-Please use different rails in (near) a metro station to prevent the minecart from going too fast and not stopping at the station.
+Put a wallsign below the rail
+
+```
+_____*___
+#########
+####]####
+```
+
+If `_` is powered rail, `*` is a rail used for router, `]` is a wallsign, `#` are some solid blocks, the shape of rail will change when a minecart arrives.
+
+Attention: Only the wallsign that facing the direction where the cart comes will be applied.
+
+Then edit it as below.
+
+```
+[Metro:router]
+(string) <-- rule
+(string) <-- rule
+(string) <-- rule
+```
+
+You can add up to 3 rules.
+
+Rules are Like:
+
+```
+0-3,6,9SW
+4,5N
+SE
+```
+
+That means:
+
+- When a minecart whose destination is Station 0, 1, 2, 3, 6, 9 arrived, The shape of the rail will be changed to `SW` (A shape that connects to the south and west rails).
+
+- When a minecart whose destination is Station 4, 5 arrived, The shape of the rail will be changed to `N` (A shape that connects to the north and the south) (Since `N` is equal to `S`, you can use `S` if you like).
+
+- When a minecart whose destination is not list above, The shape of the rail will be changed to `SE` (A shape that connects to the south and east rails).
+
+If you don't set default rule (like `SE`, no number before direction), the rail will not be changed.
+
+Also, `AE` (ascending east) is supported.
+
+Example
+
+```
+[Metro]
+Line 1
+1S
+Central Street
+```
+
+That means:
+
+The station belongs to `Line 1` .
+
+It is the second station in `Line 1` (count from 0).
+
+To the next station, cart goes south.
+
+The station is named `Central Street`.
+
+### Warning
+
+Please use different rails in (near) a metro station to prevent the minecart from going too fast and not stopping at the station. Acceleration will ignore the router.
 
 ## Permissions
 
 ### metro.reload
 
-* Reload plugin config.
+- Reload plugin config.
 
-* Enable/Disable debug mode.
+- Enable/Disable debug mode.
   
+Default: OP
+
+### metro.speed
+
+- Change the speed of a metro line.
+
 Default: OP
 
 ### metro.create
 
-* Change the speed of a metro line.
+- Create a new router.
 
-* Create a new metro station / line.
+- Create a new metro station / line.
 
-* Remove a metro station / line.
+- Remove a metro station / line.
 
 Default: OP
 
 ### metro.use
 
-* Use the metro station.
+- Use the metro station.
 
 Default: All Players
