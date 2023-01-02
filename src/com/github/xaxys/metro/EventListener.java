@@ -24,6 +24,9 @@ import org.bukkit.event.vehicle.*;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.util.Vector;
 
+import java.util.Arrays;
+import java.util.Map;
+
 public class EventListener implements Listener {
 	
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -332,14 +335,17 @@ public class EventListener implements Listener {
 		}
 
 		// Detect Router
-		detectRouter(cart.getLocation(), route, direction);
+		{
+			Block nextRail = direction.relativeBlock(cart.getLocation().getBlock());
+			if (nextRail.getType() == Material.RAIL) detectRouter(nextRail, railData.getShape(), direction, route.Dest.getIndex(), true);
+		}
 
 		// Handle Speed
 
 		// Slow down or Normal
 		// Speed is already limited by the setMaxSpeed() method
 		if (route.Speed <= Conf.NORMAL_SPEED) {
-			Conf.dbg("No acceleration");
+			// Conf.dbg("No acceleration");
 			return;
 		}
 
@@ -350,9 +356,16 @@ public class EventListener implements Listener {
 			if (!direction.isOblique() && railBlock.getType() != Material.POWERED_RAIL) break Acceleration;
 
 			// Get Flat Length and Detect Router
-			int frontFlatLength = getFlatLength(railBlock, direction, route.Dest.getIndex(), true);
-			int backFlatLength = getFlatLength(railBlock, direction, route.Dest.getIndex(), false);
-			int flatLength = Math.min(frontFlatLength, backFlatLength);
+			int flatLength = getFlatLength(railBlock, direction, route.Dest.getIndex(), true);
+//			if (direction.isOblique()) {
+//				// do second check of router on the other side of the oblique rail
+//				Map.Entry<Direction, Direction> directions = direction.separate();
+//				for (Direction d : new Direction[] {directions.getKey(), directions.getValue()}) {
+//					Block nextRail = d.relativeBlock(railBlock);
+//					if (nextRail.getType() != Material.RAIL) continue;
+//					getFlatLength(nextRail, direction, route.Dest.getIndex(), true);
+//				}
+//			}
 
 			if (flatLength < Conf.BUFFER_LENGTH) break Acceleration;
 			flatLength -= Conf.BUFFER_LENGTH;
@@ -362,23 +375,23 @@ public class EventListener implements Listener {
 			// ascending max speed
 			if (direction.isAscending() && speed > Conf.ASCENDING_MAX_SPEED) {
 				speed = Conf.ASCENDING_MAX_SPEED;
-				Conf.dbg("Speed up: Ascending max speed");
+				// Conf.dbg("Speed up: Ascending max speed");
 			}
 
 			// descending max speed
 			if (direction.isDescending() && speed > Conf.DESCENDING_MAX_SPEED) {
 				speed = Conf.DESCENDING_MAX_SPEED;
-				Conf.dbg("Speed up: Descending max speed");
+				// Conf.dbg("Speed up: Descending max speed");
 			}
 
 			cart.setMaxSpeed(speed);
 			setCartSpeed(cart, speed);
 
-			Conf.dbg(String.format("Speed up: %f, Flat Length: %d, Direction: %s", speed, flatLength, direction));
+			// Conf.dbg(String.format("Speed up: %f, Flat Length: %d, Direction: %s", speed, flatLength, direction));
 			return;
 		}
 		cart.setMaxSpeed(Conf.NORMAL_SPEED);
-		Conf.dbg("Speed up: Normal Speed");
+		// Conf.dbg("Speed up: Normal Speed");
 	}
 
 	private static void setCartSpeed(Minecart cart, double speed) {
@@ -413,20 +426,28 @@ public class EventListener implements Listener {
 		return false;
 	}
 
-	// Location is the center of the rail
-	private static void detectRouter(Location loc, Route route, Direction direction) {
-		Location signLoc = loc.clone();
-		signLoc.setX(loc.getBlockX());
-		signLoc.setY(loc.getBlockY() - 2);
-		signLoc.setZ(loc.getBlockZ());
-		Block sign = signLoc.getBlock();
+	private static Direction detectRouter(Block railBlock, Rail.Shape prevRailShape, Direction direction, int destIndex, boolean changeRouter) {
+		Block routerSign = railBlock.getRelative(0, -2, 0);
+		Direction facingDirection = direction.flat();
+		if (direction.isOblique()) {
+			Map.Entry<Direction, Direction> velocityDirections = direction.separate();
+			Map.Entry<Direction, Direction> shapeDirections = Direction.parse(prevRailShape).separate();
+			facingDirection = minusOne(velocityDirections, shapeDirections);
+		}
+		facingDirection = facingDirection.opposite();
+		routerSign = facingDirection.relativeBlock(routerSign);
 
-		Direction routerDirection = checkRoutingDestination(sign, direction, route.Dest.getIndex());
-		if (routerDirection == null || routerDirection == Direction.NONE) return;
+		Router router = checkRouter(routerSign, facingDirection.toBlockFace());
+		if (router == null) return null;
 
-		Block rail = loc.getBlock().getRelative(direction.toBlockFace());
-		changeDirection(rail, routerDirection);
-		Conf.dbg(String.format("Router Applied: %s -> %s", route.Dest.Name, direction));
+		Direction routerDirection = router.getDirection(destIndex);
+		if (routerDirection == null || routerDirection == Direction.NONE) return null;
+
+		if (changeRouter) {
+			changeDirection(railBlock, routerDirection);
+			Conf.dbg(String.format("Router Applied: %s -> %s ", destIndex, routerDirection));
+		}
+		return routerDirection;
 	}
 
 	private static void changeDirection(Block block, Direction direction) {
@@ -434,14 +455,6 @@ public class EventListener implements Listener {
 		Rail rail = (Rail) block.getBlockData();
 		rail.setShape(direction.toRailShape());
 		block.setBlockData(rail, false);
-	}
-
-	private static Direction checkRoutingDestination(Block block, Direction cartDirection, int destIndex) {
-		// BlockFace of WallSign should be opposite to the cart direction
-		Router router = checkRouter(block, cartDirection.opposite().toBlockFace());
-		if (router == null) return null;
-
-		return router.getDirection(destIndex);
 	}
 
 	private static Router checkRouter(Block block, BlockFace face) {
@@ -458,32 +471,45 @@ public class EventListener implements Listener {
 		router.addRule(sign.getLine(2));
 		router.addRule(sign.getLine(3));
 
-		Conf.dbg(String.format("Router Detected: %s", router));
+		// Conf.dbg(String.format("Router Detected: %s", router));
 		return router;
 	}
 
-	private int getFlatLength(Block b, Direction direction, int destIndex, boolean changeRouter) {
+	private int getFlatLength(Block block, Direction direction, int destIndex, boolean changeRouter) {
 		int flatLength = 0;
-		Rail.Shape shape = ((Rail) b.getBlockData()).getShape();
-		Vector v = direction.toVector();
-		Block rb = b.getRelative(v.getBlockX(), v.getBlockY(), v.getBlockZ());
+		Rail.Shape shape = ((Rail) block.getBlockData()).getShape();
+		Block relative = direction.relativeBlock(block);
 
 		while (flatLength < Conf.ADJUST_LENGTH + Conf.BUFFER_LENGTH) {
 			// if not powered rail, and the rail is not router, stop
-			if (rb.getType() != b.getType()) {
-				if (rb.getType() != Material.RAIL) break;
-				if (direction.isAscending() || direction.isDescending()) break;
-				Block routerSign = rb.getRelative(0, -2, 0).getRelative(direction.opposite().toBlockFace());
-				Direction routerDirection = checkRoutingDestination(routerSign, direction, destIndex);
-				if (routerDirection == null) break;
-				// accelerate will not be stopped only when the routing direction is straight
-				if (!routerDirection.isStraight()) break;
-				if (changeRouter) changeDirection(rb, routerDirection);
+			if (relative.getType() != block.getType() && relative.getType() != Material.RAIL) break;
+
+			Rail.Shape nextShape = ((Rail) relative.getBlockData()).getShape();
+
+			// if is rail, check router
+			if (relative.getType() == Material.RAIL && !(direction.isAscending() || direction.isDescending())) {
+				Direction routerDirection = detectRouter(relative, shape, direction, destIndex, changeRouter);
+				if (routerDirection != null) nextShape = routerDirection.toRailShape();
 			}
-			if (((Rail) rb.getBlockData()).getShape() != shape) break;
-			rb = rb.getRelative(v.getBlockX(), v.getBlockY(), v.getBlockZ());
+
+			if (nextShape != shape) break;
+			relative = direction.relativeBlock(relative);
 			flatLength++;
 		}
 		return flatLength;
+	}
+
+	private static Direction intersectOne(Map.Entry<Direction, Direction> a, Map.Entry<Direction, Direction> b) {
+		if (a.getKey() == b.getKey()) return a.getKey();
+		if (a.getKey() == b.getValue()) return a.getKey();
+		if (a.getValue() == b.getKey()) return a.getValue();
+		if (a.getValue() == b.getValue()) return a.getValue();
+		return null;
+	}
+
+	private static Direction minusOne(Map.Entry<Direction, Direction> a, Map.Entry<Direction, Direction> b) {
+		if (a.getKey() == b.getKey()) return a.getValue();
+		if (a.getKey() == b.getValue()) return a.getValue();
+		return a.getKey();
 	}
 }

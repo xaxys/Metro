@@ -1,9 +1,11 @@
 package com.github.xaxys.metro;
 
+import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Rail;
 import org.bukkit.util.Vector;
 
+import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,6 +29,38 @@ public enum Direction {
     NORTH_EAST;
 
     Direction() {
+    }
+
+    public boolean isAscending() {
+        return this == ASCENDING_EAST || this == ASCENDING_SOUTH || this == ASCENDING_WEST || this == ASCENDING_NORTH;
+    }
+
+    public boolean isDescending() {
+        return this == DESCENDING_EAST || this == DESCENDING_SOUTH || this == DESCENDING_WEST || this == DESCENDING_NORTH;
+    }
+
+    public boolean isOblique() {
+        return this == SOUTH_EAST || this == SOUTH_WEST || this == NORTH_WEST || this == NORTH_EAST;
+    }
+
+    public boolean isStraight() {
+        return this == EAST || this == SOUTH || this == WEST || this == NORTH;
+    }
+
+    public boolean isEast() {
+        return this == EAST || this == ASCENDING_EAST || this == DESCENDING_EAST;
+    }
+
+    public boolean isSouth() {
+        return this == SOUTH || this == ASCENDING_SOUTH || this == DESCENDING_SOUTH;
+    }
+
+    public boolean isWest() {
+        return this == WEST || this == ASCENDING_WEST || this == DESCENDING_WEST;
+    }
+
+    public boolean isNorth() {
+        return this == NORTH || this == ASCENDING_NORTH || this == DESCENDING_NORTH;
     }
 
     static Map<String, Direction> enumMap = new HashMap<String, Direction>() {{
@@ -96,43 +130,11 @@ public enum Direction {
         put("NORTH_EAST", NORTH_EAST);
     }};
 
-    public boolean isAscending() {
-        return this == ASCENDING_EAST || this == ASCENDING_SOUTH || this == ASCENDING_WEST || this == ASCENDING_NORTH;
-    }
-
-    public boolean isDescending() {
-        return this == DESCENDING_EAST || this == DESCENDING_SOUTH || this == DESCENDING_WEST || this == DESCENDING_NORTH;
-    }
-
-    public boolean isOblique() {
-        return this == SOUTH_EAST || this == SOUTH_WEST || this == NORTH_WEST || this == NORTH_EAST;
-    }
-
-    public boolean isStraight() {
-        return this == EAST || this == SOUTH || this == WEST || this == NORTH;
-    }
-
-    public boolean isEast() {
-        return this == EAST || this == ASCENDING_EAST || this == DESCENDING_EAST;
-    }
-
-    public boolean isSouth() {
-        return this == SOUTH || this == ASCENDING_SOUTH || this == DESCENDING_SOUTH;
-    }
-
-    public boolean isWest() {
-        return this == WEST || this == ASCENDING_WEST || this == DESCENDING_WEST;
-    }
-
-    public boolean isNorth() {
-        return this == NORTH || this == ASCENDING_NORTH || this == DESCENDING_NORTH;
-    }
-
     public static Direction parse(String name) {
         return enumMap.get(name.toUpperCase());
     }
 
-    static Map<Direction, Direction> oppositeMap = new HashMap<Direction, Direction>() {{
+    private static Map<Direction, Direction> oppositeMap = new HashMap<Direction, Direction>() {{
         put(NONE, NONE);
         put(ASCENDING_EAST, DESCENDING_WEST);
         put(ASCENDING_SOUTH, DESCENDING_NORTH);
@@ -156,7 +158,31 @@ public enum Direction {
         return oppositeMap.get(this);
     }
 
-    static Map<Direction, String> shortNameMap = new HashMap<Direction, String>() {{
+    private static Map<Direction, Direction> flatMap = new HashMap<Direction, Direction>() {{
+        put(NONE, NONE);
+        put(ASCENDING_EAST, EAST);
+        put(ASCENDING_SOUTH, SOUTH);
+        put(ASCENDING_WEST, WEST);
+        put(ASCENDING_NORTH, NORTH);
+        put(DESCENDING_EAST, EAST);
+        put(DESCENDING_SOUTH, SOUTH);
+        put(DESCENDING_WEST, WEST);
+        put(DESCENDING_NORTH, NORTH);
+        put(EAST, EAST);
+        put(SOUTH, SOUTH);
+        put(WEST, WEST);
+        put(NORTH, NORTH);
+        put(SOUTH_EAST, SOUTH_EAST);
+        put(SOUTH_WEST, SOUTH_WEST);
+        put(NORTH_WEST, NORTH_WEST);
+        put(NORTH_EAST, NORTH_EAST);
+    }};
+
+    public Direction flat() {
+        return flatMap.get(this);
+    }
+
+    private static Map<Direction, String> shortNameMap = new HashMap<Direction, String>() {{
         put(NONE, "NONE");
         put(ASCENDING_EAST, "AE");
         put(ASCENDING_SOUTH, "AS");
@@ -178,6 +204,27 @@ public enum Direction {
 
     public String toShortString() {
         return shortNameMap.get(this);
+    }
+
+    // Use Map.Entry as a Pair
+    private static Map<Direction, Map.Entry<Direction, Direction>> separateMap = new HashMap<Direction, Map.Entry<Direction, Direction>>() {{
+        put(SOUTH_EAST, new AbstractMap.SimpleEntry<>(SOUTH, EAST));
+        put(SOUTH_WEST, new AbstractMap.SimpleEntry<>(SOUTH, WEST));
+        put(NORTH_WEST, new AbstractMap.SimpleEntry<>(NORTH, WEST));
+        put(NORTH_EAST, new AbstractMap.SimpleEntry<>(NORTH, EAST));
+        put(ASCENDING_EAST, new AbstractMap.SimpleEntry<>(EAST, NONE));
+        put(ASCENDING_SOUTH, new AbstractMap.SimpleEntry<>(SOUTH, NONE));
+        put(ASCENDING_WEST, new AbstractMap.SimpleEntry<>(WEST, NONE));
+        put(ASCENDING_NORTH, new AbstractMap.SimpleEntry<>(NORTH, NONE));
+        put(DESCENDING_EAST, new AbstractMap.SimpleEntry<>(EAST, NONE));
+        put(DESCENDING_SOUTH, new AbstractMap.SimpleEntry<>(SOUTH, NONE));
+        put(DESCENDING_WEST, new AbstractMap.SimpleEntry<>(WEST, NONE));
+        put(DESCENDING_NORTH, new AbstractMap.SimpleEntry<>(NORTH, NONE));
+    }};
+
+    // Use Map.Entry as a Pair
+    public Map.Entry<Direction, Direction> separate() {
+        return separateMap.get(this);
     }
 
     // RailShape
@@ -232,6 +279,14 @@ public enum Direction {
         put(Direction.NORTH_EAST, BlockFace.NORTH_EAST);
         put(Direction.SOUTH_WEST, BlockFace.SOUTH_WEST);
         put(Direction.SOUTH_EAST, BlockFace.SOUTH_EAST);
+        put(Direction.ASCENDING_EAST, BlockFace.EAST);
+        put(Direction.ASCENDING_WEST, BlockFace.WEST);
+        put(Direction.ASCENDING_NORTH, BlockFace.NORTH);
+        put(Direction.ASCENDING_SOUTH, BlockFace.SOUTH);
+        put(Direction.DESCENDING_EAST, BlockFace.EAST);
+        put(Direction.DESCENDING_WEST, BlockFace.WEST);
+        put(Direction.DESCENDING_NORTH, BlockFace.NORTH);
+        put(Direction.DESCENDING_SOUTH, BlockFace.SOUTH);
     }};
 
     public BlockFace toBlockFace() {
@@ -310,5 +365,10 @@ public enum Direction {
         int z = isZero(vector.getZ()) ? 0 : (vector.getZ() > 0 ? 1 : -1);
         Vector normalized = new Vector(x, y, z);
         return parseVectorMap.get(normalized);
+    }
+
+    public Block relativeBlock(Block block) {
+        Vector vector = toVector();
+        return block.getRelative(vector.getBlockX(), vector.getBlockY(), vector.getBlockZ());
     }
 }
