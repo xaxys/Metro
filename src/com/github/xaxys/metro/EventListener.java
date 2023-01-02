@@ -24,7 +24,6 @@ import org.bukkit.event.vehicle.*;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.util.Vector;
 
-import java.util.Arrays;
 import java.util.Map;
 
 public class EventListener implements Listener {
@@ -53,9 +52,12 @@ public class EventListener implements Listener {
 				if (e.getLine(1).isEmpty()) {
 					Conf.msg(e.getPlayer(), "MetroLine is empty on row 1!");
 					return;
-				} else {
-					s.LineName = e.getLine(1);
 				}
+				if (e.getLine(1).contains(" ")) {
+					Conf.msg(e.getPlayer(), "MetroLine can't contain space on row 1!");
+					return;
+				}
+				s.LineName = e.getLine(1);
 
 				// Line 2
 				Router.Rule rule = Router.Rule.parse(e.getLine(2));
@@ -79,9 +81,8 @@ public class EventListener implements Listener {
 				if (e.getLine(3).isEmpty()) {
 					Conf.msg(e.getPlayer(), "StationName is empty on row 3!");
 					return;
-				} else {
-					s.Name = e.getLine(3);
 				}
+				s.Name = e.getLine(3);
 
 				s.Pos = new Position(e.getBlock().getLocation());
 
@@ -143,8 +144,7 @@ public class EventListener implements Listener {
 				return;
 			}
 			if (e.getItem() == null || e.getPlayer().isSneaking()) {
-				boolean f = station.callCart();
-				if (f == false) {
+				if (!station.callCart()) {
 					Conf.msg(e.getPlayer(), "Please clean the last minecart first.");
 				}
 			} else {
@@ -208,7 +208,7 @@ public class EventListener implements Listener {
 
 			// Check permission
 			if (e.getEntered() instanceof Player) {
-				Player player = ((Player) e.getEntered());
+				Player player = (Player) e.getEntered();
 				if (!player.hasPermission(Main.PERM_USE)) {
 					e.setCancelled(true);
 					Conf.msg(player, Conf.MSG_NOPERM);
@@ -218,7 +218,7 @@ public class EventListener implements Listener {
 
 			route.Start = true;
 			Vector vec = new Vector(0, 0, 0);
-			Integer N = route.Orig.Line.isLoop ? 1 : MetroLine.compareStation(route.Dest, route.Orig);
+			int N = route.Orig.Line.isLoop ? 1 : MetroLine.compareStation(route.Dest, route.Orig);
 			switch (route.Orig.IncDire) {
 				case NORTH: vec.setZ(-N); break;
 				case SOUTH: vec.setZ(N); break;
@@ -242,9 +242,7 @@ public class EventListener implements Listener {
 			
 			DataBase.DB.delRoute(v.getUniqueId());
 			// Remove minecart on the next tick to avoid player falling
-			Bukkit.getScheduler().runTask(Main.plugin, () -> {
-				v.remove();
-			});
+			Bukkit.getScheduler().runTask(Main.plugin, v::remove);
 			Conf.dbg("onVehicleExit");
 		}
 	}
@@ -289,7 +287,7 @@ public class EventListener implements Listener {
 	public void onVehicleMove(VehicleMoveEvent e) {
 		// Check cart
 		if (!(e.getVehicle() instanceof Minecart)) return;
-		Minecart cart = ((Minecart) e.getVehicle());
+		Minecart cart = (Minecart) e.getVehicle();
 		
 		// Check disabled world
 		if (Conf.DISABLE_WORLDS.contains(e.getVehicle().getWorld().getName())) return;
@@ -299,7 +297,7 @@ public class EventListener implements Listener {
 		if (route == null) return;
 
 		// Check if the cart is started
-		if (route.Start == false) {
+		if (!route.Start) {
 			cart.setVelocity(new Vector(0, 0, 0));
 			return;
 		}
@@ -413,7 +411,7 @@ public class EventListener implements Listener {
 		if (station != null) {
 			cart.getPassengers().forEach((p) -> {
 				if (p instanceof Player) {
-					Player player = ((Player) p);
+					Player player = (Player) p;
 					player.sendTitle(station.Name, station.LineName, 10, 70, 20);
 					player.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 2, 1);
 				}

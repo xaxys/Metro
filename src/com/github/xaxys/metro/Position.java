@@ -32,7 +32,7 @@ public class Position implements Serializable {
 	@Override
 	public boolean equals(Object b) {
 		if (b instanceof Position) {
-			Position p = (Position)b;
+			Position p = (Position) b;
 			return x.equals(p.x) && y.equals(p.y) && z.equals(p.z) && world.equals(p.world);
 		} else return false;
 	}

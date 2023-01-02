@@ -60,7 +60,7 @@ public class MetroLine extends ArrayList<MetroStation> implements Serializable {
 	// return 1 if index of a in MetroLine > index of b in MetroLine
 	// return -1 if index of a in MetroLine > index of b in MetroLine
 	// return 0 if index of a in MetroLine = index of b in MetroLine
-	public static Integer compareStation(MetroStation a, MetroStation b) {
+	public static int compareStation(MetroStation a, MetroStation b) {
 		MetroLine aLine = a.Line;
 		MetroLine bLine = b.Line;
 		if (aLine != bLine) return 2;

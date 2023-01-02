@@ -52,10 +52,10 @@ public class Router {
         @Override
         public boolean isMatch(Value value) {
             if (value instanceof Range) {
-                Range range = (Range)value;
+                Range range = (Range) value;
                 return range.min >= min && range.max <= max;
             } else if (value instanceof Exact) {
-                Exact exact = (Exact)value;
+                Exact exact = (Exact) value;
                 return exact.value >= min && exact.value <= max;
             } else return false;
         }
@@ -113,7 +113,7 @@ public class Router {
 
         public Integer getExact() {
             if (values.length == 1 && values[0] instanceof Exact) {
-                return ((Exact)values[0]).value;
+                return ((Exact) values[0]).value;
             } else return null;
         }
 

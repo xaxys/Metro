@@ -31,7 +31,7 @@ public class Conf {
 	public static final String MSG_NOPERM = "§cYou don't have permission for this";
 	public static final String CONFIG_PATH = "plugins/Metro/config.yml";
 	public static final String DB_PATH = "plugins/Metro/db.bin";
-	public static final String[] MSG_USAGE = new String[]{
+	public static final String[] MSG_USAGE = new String[] {
 			"§cUsage: /metro reload",
 			"§cUsage: /metro loop [MetroLine Name] {[true|false]}",
 			"§cUsage: /metro speed [MetroLine Name] {[double value]}",
@@ -49,7 +49,7 @@ public class Conf {
 		defaults.set("normal_speed", 0.4);
 		defaults.set("adjust_length", 12);
 		defaults.set("buffer_length", 3);
-		defaults.set("disabled_worlds", Arrays.asList("disabled_world"));
+		defaults.set("disabled_worlds", List.of("disabled_world"));
 	}
 
 	public static void loadConfig() {
