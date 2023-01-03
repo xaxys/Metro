@@ -308,14 +308,14 @@ public class EventListener implements Listener {
 		// Detect railways
 		Block railBlock = cart.getLocation().getBlock();
 		if (!(railBlock.getBlockData() instanceof Rail)) return;
-		Rail railData = (Rail) railBlock.getBlockData();
+		Rail.Shape railShape = ((Rail) railBlock.getBlockData()).getShape();
 
 		// Get Velocity Direction
 		// When ascending or descending, the velocity of vehicle in Y-axis is still 0
 		// So we need to the Rail.Shape to do second check
 		Direction direction;
 		Direction velocityDirection = Direction.parse(cart.getVelocity());
-		Direction shapeDirection = Direction.parse(railData.getShape());
+		Direction shapeDirection = Direction.parse(railShape);
 		if (velocityDirection == null) return;
 		if (shapeDirection == null) return;
 
@@ -333,9 +333,16 @@ public class EventListener implements Listener {
 		}
 
 		// Detect Router
-		{
+		if (direction.isOblique()) {
 			Block nextRail = direction.relativeBlock(cart.getLocation().getBlock());
-			if (nextRail.getType() == Material.RAIL) detectRouter(nextRail, railData.getShape(), direction, route.Dest.getIndex(), true);
+			Direction facing = getFacingDirection(railShape, direction);
+			detectRouterN(nextRail, facing, direction, route.Dest.getIndex(), true, 2);
+			Direction near = intersectOne(Direction.parse(railShape).separate(), direction.separate());
+			Block nearRail = near.relativeBlock(railBlock);
+			detectRouterN(nearRail, near.opposite(), direction, route.Dest.getIndex(), true, 2);
+		} else {
+			Block nextRail = direction.relativeBlock(cart.getLocation().getBlock());
+			detectRouter(nextRail, direction.opposite(), route.Dest.getIndex(), true);
 		}
 
 		// Handle Speed
@@ -354,16 +361,7 @@ public class EventListener implements Listener {
 			if (!direction.isOblique() && railBlock.getType() != Material.POWERED_RAIL) break Acceleration;
 
 			// Get Flat Length and Detect Router
-			int flatLength = getFlatLength(railBlock, direction, route.Dest.getIndex(), true);
-//			if (direction.isOblique()) {
-//				// do second check of router on the other side of the oblique rail
-//				Map.Entry<Direction, Direction> directions = direction.separate();
-//				for (Direction d : new Direction[] {directions.getKey(), directions.getValue()}) {
-//					Block nextRail = d.relativeBlock(railBlock);
-//					if (nextRail.getType() != Material.RAIL) continue;
-//					getFlatLength(nextRail, direction, route.Dest.getIndex(), true);
-//				}
-//			}
+			int flatLength = getFlatLength(railBlock, direction, Conf.ADJUST_LENGTH + Conf.BUFFER_LENGTH, route.Dest.getIndex(), true);
 
 			if (flatLength < Conf.BUFFER_LENGTH) break Acceleration;
 			flatLength -= Conf.BUFFER_LENGTH;
@@ -424,15 +422,10 @@ public class EventListener implements Listener {
 		return false;
 	}
 
-	private static Direction detectRouter(Block railBlock, Rail.Shape prevRailShape, Direction direction, int destIndex, boolean changeRouter) {
+	private static Direction detectRouter(Block railBlock, Direction facingDirection, int destIndex, boolean changeRouter) {
+		if (railBlock.getType() != Material.RAIL) return null;
+		facingDirection = facingDirection.flat();
 		Block routerSign = railBlock.getRelative(0, -2, 0);
-		Direction facingDirection = direction.flat();
-		if (direction.isOblique()) {
-			Map.Entry<Direction, Direction> velocityDirections = direction.separate();
-			Map.Entry<Direction, Direction> shapeDirections = Direction.parse(prevRailShape).separate();
-			facingDirection = minusOne(velocityDirections, shapeDirections);
-		}
-		facingDirection = facingDirection.opposite();
 		routerSign = facingDirection.relativeBlock(routerSign);
 
 		Router router = checkRouter(routerSign, facingDirection.toBlockFace());
@@ -446,6 +439,28 @@ public class EventListener implements Listener {
 			Conf.dbg(String.format("Router Applied: %s -> %s ", destIndex, routerDirection));
 		}
 		return routerDirection;
+	}
+
+	//
+	private static Direction getFacingDirection(Rail.Shape prevRailShape, Direction direction) {
+		Direction facingDirection = direction.flat();
+		if (direction.isOblique()) {
+			Map.Entry<Direction, Direction> velocityDirections = direction.separate();
+			Map.Entry<Direction, Direction> shapeDirections = Direction.parse(prevRailShape).separate();
+			facingDirection = minusOne(velocityDirections, shapeDirections);
+		}
+		facingDirection = facingDirection.opposite();
+		return facingDirection;
+	}
+
+	private static Direction detectRouterN(Block railBlock, Direction facingDirection, Direction direction, int destIndex, boolean changeRouter, int searchRange) {
+		Block b = railBlock;
+		for (int i = 0; i < searchRange; i++) {
+			Direction d = detectRouter(b, facingDirection, destIndex, changeRouter);
+			if (d != null) return d;
+			b = direction.relativeBlock(b);
+		}
+		return null;
 	}
 
 	private static void changeDirection(Block block, Direction direction) {
@@ -473,12 +488,13 @@ public class EventListener implements Listener {
 		return router;
 	}
 
-	private int getFlatLength(Block block, Direction direction, int destIndex, boolean changeRouter) {
+	private int getFlatLength(Block block, Direction direction, int peekLength, int destIndex, boolean changeRouter) {
 		int flatLength = 0;
 		Rail.Shape shape = ((Rail) block.getBlockData()).getShape();
 		Block relative = direction.relativeBlock(block);
+		Direction facingDirection = getFacingDirection(shape, direction);
 
-		while (flatLength < Conf.ADJUST_LENGTH + Conf.BUFFER_LENGTH) {
+		while (flatLength < peekLength) {
 			// if not powered rail, and the rail is not router, stop
 			if (relative.getType() != block.getType() && relative.getType() != Material.RAIL) break;
 
@@ -486,7 +502,7 @@ public class EventListener implements Listener {
 
 			// if is rail, check router
 			if (relative.getType() == Material.RAIL && !(direction.isAscending() || direction.isDescending())) {
-				Direction routerDirection = detectRouter(relative, shape, direction, destIndex, changeRouter);
+				Direction routerDirection = detectRouter(relative, facingDirection, destIndex, changeRouter);
 				if (routerDirection != null) nextShape = routerDirection.toRailShape();
 			}
 
@@ -506,6 +522,7 @@ public class EventListener implements Listener {
 	}
 
 	private static Direction minusOne(Map.Entry<Direction, Direction> a, Map.Entry<Direction, Direction> b) {
+		if (b == null) return a.getKey();
 		if (a.getKey() == b.getKey()) return a.getValue();
 		if (a.getKey() == b.getValue()) return a.getValue();
 		return a.getKey();

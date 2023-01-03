@@ -17,7 +17,6 @@ public class Conf {
 	public static String ERROR;
 	public static int ADJUST_LENGTH = 12;
 	public static int BUFFER_LENGTH = 3;
-	public static double NORMAL_SPEED = 0.4;
 	public static double ASCENDING_MAX_SPEED = 0.6;
 	public static double DESCENDING_MAX_SPEED = 1.2;
 	public static List<String> DISABLE_WORLDS;
@@ -31,10 +30,11 @@ public class Conf {
 	public static final String MSG_NOPERM = "§cYou don't have permission for this";
 	public static final String CONFIG_PATH = "plugins/Metro/config.yml";
 	public static final String DB_PATH = "plugins/Metro/db.bin";
+	public static final double NORMAL_SPEED = 0.4;
 	public static final String[] MSG_USAGE = new String[] {
 			"§cUsage: /metro reload",
-			"§cUsage: /metro loop [MetroLine Name] {[true|false]}",
-			"§cUsage: /metro speed [MetroLine Name] {[double value]}",
+			"§cUsage: /metro loop <MetroLine Name> [true|false]",
+			"§cUsage: /metro speed <MetroLine Name> [double value]",
 	};
 	
 	public static MemoryConfiguration defaults = new MemoryConfiguration();
@@ -46,10 +46,9 @@ public class Conf {
 		defaults.set("error", "[&4Wrong Metro Format&r]");
 		defaults.set("ascending_speed", 0.6);
 		defaults.set("descending_speed", 1.2);
-		defaults.set("normal_speed", 0.4);
 		defaults.set("adjust_length", 12);
 		defaults.set("buffer_length", 3);
-		defaults.set("disabled_worlds", List.of("disabled_world"));
+		defaults.set("disabled_worlds", Arrays.asList("disabled_world"));
 	}
 
 	public static void loadConfig() {
@@ -67,11 +66,9 @@ public class Conf {
 			ERROR = c(config.getString("error"));
 			ASCENDING_MAX_SPEED = config.getDouble("ascending_speed");
 			DESCENDING_MAX_SPEED = config.getDouble("descending_speed");
-			NORMAL_SPEED = config.getDouble("normal_speed");
 			ADJUST_LENGTH = config.getInt("adjust_length");
 			BUFFER_LENGTH = config.getInt("buffer_length");
 			DISABLE_WORLDS = config.getStringList("disabled_worlds");
-			
 		} catch (Exception e) {
 			err("loadConfig", "Caught Exception: " + e.getMessage());
 		}

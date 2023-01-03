@@ -42,6 +42,10 @@ public class Position implements Serializable {
 		return String.format("Position{x=%d,y=%d,z=%d,world=%s}", x, y, z, world);
 	}
 
+	public String toShortString() {
+		return String.format("(%d,%d,%d)", x, y, z);
+	}
+
 	public Location toLocation() {
 		World w = Bukkit.getWorld(world);
 		return w == null ? null : new Location(w, x.doubleValue(), y.doubleValue(), z.doubleValue());

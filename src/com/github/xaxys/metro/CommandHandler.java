@@ -6,6 +6,7 @@ import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.TabExecutor;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -93,7 +94,7 @@ public class CommandHandler implements TabExecutor {
                 // reload configuration
 
                 Conf.loadConfig();
-                sender.sendMessage("§aMetro Plugin Reloaded!");
+                sender.sendMessage("§aMetro plugin reloaded!");
             } else if (args[0].equalsIgnoreCase("debug")) {
 
                 if (!(sender instanceof ConsoleCommandSender) && !sender.hasPermission(Main.PERM_RELOAD)) {
@@ -105,7 +106,7 @@ public class CommandHandler implements TabExecutor {
 
                 Conf.DEBUG = !Conf.DEBUG;
                 Conf.config.set("debug", Conf.DEBUG);
-                sender.sendMessage("§aMetro Plugin DebugMode:" + Conf.DEBUG);
+                sender.sendMessage("§aMetro plugin debug set to " + Conf.DEBUG);
             }
             return true;
         }
@@ -129,7 +130,6 @@ public class CommandHandler implements TabExecutor {
             }
             if (sender.hasPermission(Main.PERM_RELOAD)) {
                 subCommands.add("reload");
-                subCommands.add("debug");
             }
             return subCommands;
         } else if (args.length == 2) {
@@ -138,9 +138,9 @@ public class CommandHandler implements TabExecutor {
             }
         } else if (args.length == 3) {
             if (args[0].equals("loop")) {
-                return List.of("true", "false");
+                return Arrays.asList("true", "false");
             } else if (args[0].equals("speed")) {
-                return List.of("[double value]");
+                return Arrays.asList("[double value]");
             }
         }
         return Collections.emptyList();

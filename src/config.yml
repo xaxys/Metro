@@ -1,7 +1,9 @@
 debug: false # Debug mode. You'll need the 'metro.reload' permission.
 title: '&a[&3&lMetro&a]'
 error: '[&4Wrong Metro Format&r]'
-selStart: '&8> &5'
-selEnd: ' &8<'
+ascending_speed: 0.6
+descending_speed: 1.2
+adjust_length: 12
+buffer_length: 3
 disabled_worlds:
   - disabled_world

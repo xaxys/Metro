@@ -41,12 +41,10 @@ public class DataBase implements Serializable {
 		if (MetroMap.containsKey(lineName)) {
 			MetroLine line = MetroMap.get(lineName);
 			line.isLoop = isLoop;
-
 			saveDB(Conf.DB_PATH);
 			return true;
-		} else {
-			return false;
 		}
+		return false;
 	}
 
 	public Boolean getLoop(String lineName) {
@@ -60,9 +58,8 @@ public class DataBase implements Serializable {
 			line.Speed = speed;
 			saveDB(Conf.DB_PATH);
 			return true;
-		} else {
-			return false;
 		}
+		return false;
 	}
 
 	public Double getSpeed(String lineName) {
