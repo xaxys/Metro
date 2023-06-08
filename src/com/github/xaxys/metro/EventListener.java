@@ -27,6 +27,9 @@ import org.bukkit.util.Vector;
 import java.util.Map;
 
 public class EventListener implements Listener {
+
+	private static final BlockFace[] ADJACENT_FACES = new BlockFace[] {
+			BlockFace.SELF, BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST };
 	
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onSignChange(SignChangeEvent e) {
@@ -158,21 +161,24 @@ public class EventListener implements Listener {
 
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onBlockPhysics(BlockPhysicsEvent e) {
-		Block b = e.getBlock();
-		if (b.getBlockData() instanceof WallSign) {
-			// Check disabled world
-			if (Conf.DISABLE_WORLDS.contains(b.getWorld().getName())) return;
-			
-			WallSign sign = (WallSign) b.getBlockData();
-			MetroStation station = DataBase.DB.getStation(b.getLocation());
-			if (station == null) return;
+		// Check disabled world
+		if (Conf.DISABLE_WORLDS.contains(e.getBlock().getWorld().getName())) return;
 
-			Block backBlock = b.getRelative(sign.getFacing().getOppositeFace());
-			if (backBlock.getType() == Material.AIR) {
-				backBlock.setType(Material.STONE);
+		for (BlockFace face : ADJACENT_FACES) { // Must check every block adjacent to this block myself after 1.20
+			Block b = e.getBlock().getRelative(face);
+			if (b.getBlockData() instanceof WallSign) {
+				WallSign sign = (WallSign) b.getBlockData();
+				MetroStation station = DataBase.DB.getStation(b.getLocation());
+				if (station == null) return;
+
+				Block backBlock = b.getRelative(sign.getFacing().getOppositeFace());
+				if (!backBlock.getType().isSolid()) {
+					backBlock.setType(Material.STONE, false); // not apply physics to avoid calling event again
+				}
+				e.setCancelled(true);
+				Conf.dbg("CancelSignPhysics");
+				break;
 			}
-			e.setCancelled(true);
-			Conf.dbg("CancelSignPhysics");
 		}
 	}
 

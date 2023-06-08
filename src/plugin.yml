@@ -1,6 +1,6 @@
 main: com.github.xaxys.metro.Main
 name: Metro
-version: 1.4.4
+version: 1.5.0
 author: xaxys
 api-version: 1.13
 description: Adds Working Metro to Minecraft!
